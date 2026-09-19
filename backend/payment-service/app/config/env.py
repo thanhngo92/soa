@@ -1,0 +1,19 @@
+from pydantic_settings import BaseSettings
+
+
+class Settings(BaseSettings):
+    SERVICE_NAME: str = "payment-service"
+    PORT: int = 8815
+    MONGO_URI: str = "mongodb://mongodb:27017"
+    DATABASE_NAME: str = "payment_db"
+    JWT_SECRET: str = "change_me_to_a_secure_secret"
+    JWT_EXPIRE_MINUTES: int = 60
+    ACCOUNT_SERVICE_URL: str = "http://account-service:8661"
+    TUITION_SERVICE_URL: str = "http://tuition-service:8732"
+    NOTIFICATION_SERVICE_URL: str = "http://notification-service:8940"
+
+    class Config:
+        env_file = ".env"
+
+
+settings = Settings()

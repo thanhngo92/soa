@@ -1,0 +1,142 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Network ports summary:
+#   Frontend      : 3659  (local dev only, not in compose)
+#   API Gateway   : 8877
+#   account-svc   : 8661
+#   tuition-svc   : 8732
+#   payment-svc   : 8815
+#   notification  : 8940
+#   MongoDB       : 27017
+#   Mailpit SMTP  : 1025
+#   Mailpit Web   : 8025  →  http://localhost:8025
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── Infrastructure ──────────────────────────────────────────────────────────
+  mongodb:
+    image: mongo:7
+    container_name: mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+      - ./init-db:/docker-entrypoint-initdb.d:ro
+    networks:
+      - soa-net
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - soa-net
+
+  # ── Backend Microservices ────────────────────────────────────────────────────
+  account-service:
+    build:
+      context: ./backend/account-service
+    container_name: account-service
+    restart: unless-stopped
+    ports:
+      - "8661:8661"
+    environment:
+      MONGO_URI: mongodb://mongodb:27017
+      DATABASE_NAME: account_db
+      JWT_SECRET: super_secret_jwt_key_change_in_prod
+      JWT_EXPIRE_MINUTES: 60
+    depends_on:
+      - mongodb
+    networks:
+      - soa-net
+
+  tuition-service:
+    build:
+      context: ./backend/tuition-service
+    container_name: tuition-service
+    restart: unless-stopped
+    ports:
+      - "8732:8732"
+    environment:
+      MONGO_URI: mongodb://mongodb:27017
+      DATABASE_NAME: tuition_db
+      JWT_SECRET: super_secret_jwt_key_change_in_prod
+    depends_on:
+      - mongodb
+    networks:
+      - soa-net
+
+  notification-service:
+    build:
+      context: ./backend/notification-service
+    container_name: notification-service
+    restart: unless-stopped
+    ports:
+      - "8940:8940"
+    environment:
+      MONGO_URI: mongodb://mongodb:27017
+      DATABASE_NAME: notification_db
+      JWT_SECRET: super_secret_jwt_key_change_in_prod
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      MAIL_FROM: noreply@ibanking.local
+    depends_on:
+      - mongodb
+      - mailpit
+    networks:
+      - soa-net
+
+  payment-service:
+    build:
+      context: ./backend/payment-service
+    container_name: payment-service
+    restart: unless-stopped
+    ports:
+      - "8815:8815"
+    environment:
+      MONGO_URI: mongodb://mongodb:27017
+      DATABASE_NAME: payment_db
+      JWT_SECRET: super_secret_jwt_key_change_in_prod
+      ACCOUNT_SERVICE_URL: http://account-service:8661
+      TUITION_SERVICE_URL: http://tuition-service:8732
+      NOTIFICATION_SERVICE_URL: http://notification-service:8940
+    depends_on:
+      - mongodb
+      - account-service
+      - tuition-service
+      - notification-service
+    networks:
+      - soa-net
+
+  # ── API Gateway ──────────────────────────────────────────────────────────────
+  api-gateway:
+    build:
+      context: ./api-gateway
+    container_name: api-gateway
+    restart: unless-stopped
+    ports:
+      - "8877:8877"
+    environment:
+      ACCOUNT_SERVICE_URL: http://account-service:8661
+      TUITION_SERVICE_URL: http://tuition-service:8732
+      PAYMENT_SERVICE_URL: http://payment-service:8815
+      NOTIFICATION_SERVICE_URL: http://notification-service:8940
+      ALLOWED_ORIGIN: http://localhost:3659
+    depends_on:
+      - account-service
+      - tuition-service
+      - payment-service
+      - notification-service
+    networks:
+      - soa-net
+
+networks:
+  soa-net:
+    driver: bridge
+
+volumes:
+  mongo_data:
