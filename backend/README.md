@@ -3,7 +3,7 @@
 * **Language & Runtime:** Python 3.11+
 * **Framework:** FastAPI
 * **Data Validation & DTO:** Pydantic v2
-* **Database Access:** MongoDB
+* **Database Access:** MySQL 8.0 (aiomysql)
 * **Inter-Service Communication:** Async REST API via `httpx`
 * **Network Topology & Ports:**
   - API Gateway (Public Entrance): `http://localhost:8877/api`
@@ -26,9 +26,9 @@ route ──> middleware ──> controller ──> services ──> repository 
 2. **`middleware`**: Performs JWT token authentication, authorization checks, global exception trapping, and fail-fast validation.
 3. **`controller`**: Parses and validates input parameters (`params`, `query`, `body`), delegates to the `services` layer, and wraps responses via `response_util.py`.
 4. **`services`**: Implements core business logic, calculations, policy validation, and orchestrates downstream clients.
-5. **`repository`**: Exclusively executes MongoDB queries (atomic operations, finds, updates) through the Motor async driver.
-6. **`schema`**: Defines MongoDB Document models and Pydantic DTO schemas (Request/Response validation).
-7. **`database`**: Reads and writes data to the service's dedicated, isolated MongoDB database.
+5. **`repository`**: Exclusively executes MySQL queries (atomic operations, finds, updates) through the aiomysql async connection pool.
+6. **`schema`**: Defines table schemas and Pydantic DTO schemas (Request/Response validation).
+7. **`database`**: Reads and writes data to the service's dedicated, isolated MySQL database.
 
 ---
 
@@ -50,7 +50,7 @@ backend/
         │
         ├── config/                  # Configuration Layer
         │   ├── env.py               # Environment loader via pydantic-settings
-        │   └── database.py          # Motor client connection pool & database instance
+        │   └── database.py          # aiomysql connection pool & database instance
         │
         ├── routes/                  # 1. ROUTE LAYER
         │   └── [feature]_routes.py  # URL endpoint, method, response model, points to controller
@@ -66,11 +66,11 @@ backend/
         │   └── [feature]_service.py # Core business rules, calculations, saga coordination
         │
         ├── repositories/            # 5. REPOSITORY LAYER
-        │   └── [feature]_repository.py # Direct MongoDB queries (Atomic updates, find, insert)
+        │   └── [feature]_repository.py # Direct MySQL queries (Atomic updates, find, insert)
         │
         ├── schemas/                 # 6. SCHEMA / MODEL LAYER
         │   ├── [feature]_schema.py  # Pydantic DTOs (Request / Response validation)
-        │   └── [feature]_document.py# MongoDB document schema definition
+        │   └── [feature]_document.py# MySQL table schema definition
         │
         ├── utils/                   # Shared Utilities Layer
         │   ├── response_util.py     # Standardized JSON response formatting (success, data, error)
@@ -90,9 +90,9 @@ backend/
 | **`middlewares/`** | JWT authentication, permission guards, global error catching, fail-fast validation. | Returns HTTP 401/403/422 immediately on failure. Contains no business domain rules. |
 | **`controllers/`** | Extracts validated inputs, coordinates with the corresponding Service, formats output. | **No business calculations**, no direct database operations. |
 | **`services/`** | Core business domain logic, condition verification, orchestrating client calls. | **Completely independent of web layer**: does not accept FastAPI `Request` or `Response` objects. |
-| **`repositories/`** | Exclusively executes MongoDB operations via Motor (`find_one_and_update`, `insert_one`, `find`). | **No business calculations**, pure data persistence layer. |
-| **`schemas/`** | Defines MongoDB document structures and Pydantic DTOs for request/response validation. | Contains no persistence queries or execution logic. |
-| **`config/database.py`**| Manages the `AsyncIOMotorClient` connection pool to the service's dedicated database. | Manages lifecycle via FastAPI `lifespan`. |
+| **`repositories/`** | Exclusively executes MySQL operations via aiomysql (atomic `UPDATE`, `INSERT`, `SELECT`). | **No business calculations**, pure data persistence layer. |
+| **`schemas/`** | Defines table structures and Pydantic DTOs for request/response validation. | Contains no persistence queries or execution logic. |
+| **`config/database.py`**| Manages the `aiomysql` connection pool to the service's dedicated database. | Manages lifecycle via FastAPI `lifespan`. |
 | **`clients/`** | Encapsulates HTTP client calls to downstream microservices using `httpx.AsyncClient`. | Only present in orchestrator services. Never directly accesses databases of other services. |
 
 ---
@@ -104,7 +104,7 @@ backend/
    - Direct cross-database reads or writes are strictly prohibited. All data sharing occurs via REST APIs.
 
 2. **Concurrency & Data Consistency:**
-   - In `repositories`, all state-mutating operations must utilize **Atomic Conditional Updates** (`find_one_and_update` with query conditions).
+   - In `repositories`, all state-mutating operations must utilize **Atomic Conditional Updates** (atomic `UPDATE` with `WHERE` conditions and row-level locking).
    - Never perform *Read-then-Update* in application memory to prevent race conditions.
 
 3. **Standardized Error Handling & Response Structure:**
