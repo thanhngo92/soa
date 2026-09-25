@@ -1,0 +1,51 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Account Service — Standalone Microservice Docker Compose
+# Run independently: docker compose up --build
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  account-db:
+    image: mysql:8.0
+    container_name: account-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: account_db
+      MYSQL_USER: account_user
+      MYSQL_PASSWORD: account_password
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./init-db:/docker-entrypoint-initdb.d:ro
+      - account_mysql_data:/var/lib/mysql
+    networks:
+      - account-net
+
+  account-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: account-service
+    restart: unless-stopped
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8661"]
+    ports:
+      - "8661:8661"
+    environment:
+      MYSQL_HOST: account-db
+      MYSQL_PORT: 3306
+      MYSQL_USER: account_user
+      MYSQL_PASSWORD: account_password
+      MYSQL_DATABASE: account_db
+      JWT_SECRET: super_secret_jwt_key_change_in_prod
+      JWT_EXPIRE_MINUTES: 60
+    depends_on:
+      - account-db
+    networks:
+      - account-net
+
+networks:
+  account-net:
+    driver: bridge
+
+volumes:
+  account_mysql_data:
