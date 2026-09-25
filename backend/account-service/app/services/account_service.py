@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import bcrypt
 import jwt
 
@@ -7,22 +7,22 @@ from app.repositories.account_repository import find_by_username, find_by_id, de
 from app.utils.error_util import AppError
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
+def _verify_password(plain: str, hashed: str) -> bool:
     try:
-        return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+        return bcrypt.checkpw(plain.encode(), hashed.encode())
     except Exception:
         return False
 
 
 async def login(username: str, password: str) -> dict:
     account = await find_by_username(username)
-    if not account or not verify_password(password, account["password_hash"]):
+    if not account or not _verify_password(password, account["password_hash"]):
         raise AppError("INVALID_CREDENTIALS", "Invalid username or password", 401)
     payload = {
-        "sub": str(account["_id"]),
+        "sub":      str(account["_id"]),
         "username": account["username"],
-        "email": account["email"],
-        "exp": datetime.utcnow() + timedelta(minutes=settings.JWT_EXPIRE_MINUTES),
+        "email":    account["email"],
+        "exp":      datetime.now(timezone.utc) + timedelta(minutes=settings.JWT_EXPIRE_MINUTES),
     }
     return {"access_token": jwt.encode(payload, settings.JWT_SECRET, algorithm="HS256"), "token_type": "bearer"}
 
@@ -32,12 +32,12 @@ async def get_profile(account_id: str) -> dict:
     if not account:
         raise AppError("ACCOUNT_NOT_FOUND", "Account not found", 404)
     return {
-        "id": str(account["_id"]),
-        "username": account["username"],
+        "id":        str(account["_id"]),
+        "username":  account["username"],
         "full_name": account["full_name"],
-        "email": account["email"],
-        "phone": account["phone"],
-        "balance": account["balance"],
+        "email":     account["email"],
+        "phone":     account["phone"],
+        "balance":   account["balance"],
     }
 
 
