@@ -1,52 +1,48 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Account Service — Standalone Microservice Docker Compose
-# Run independently: docker compose up -d
+# Tuition Service — Standalone Microservice Docker Compose
 # ─────────────────────────────────────────────────────────────────────────────
 
 services:
-  account-db:
+  tuition-db:
     image: mysql:8.0
-    container_name: account-db
+    container_name: tuition-db
     restart: unless-stopped
     command: --port=8552
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: account_db
-      MYSQL_USER: account_user
-      MYSQL_PASSWORD: account_password
+      MYSQL_DATABASE: tuition_db
     ports:
       - "8552:8552"
     volumes:
-      - ./init-db:/docker-entrypoint-initdb.d:ro
-      - account_mysql_data:/var/lib/mysql
+      - ../../init-db/init-mysql.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - tuition_mysql_data:/var/lib/mysql
     networks:
-      - account-net
+      - tuition-net
 
-  account-service:
+  tuition-service:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: account-service
+    container_name: tuition-service
     restart: unless-stopped
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8661"]
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8732"]
     ports:
-      - "8661:8661"
+      - "8732:8732"
     environment:
-      MYSQL_HOST: account-db
+      MYSQL_HOST: tuition-db
       MYSQL_PORT: 8552
-      MYSQL_USER: account_user
-      MYSQL_PASSWORD: account_password
-      MYSQL_DATABASE: account_db
+      MYSQL_USER: root
+      MYSQL_PASSWORD: rootpassword
+      MYSQL_DATABASE: tuition_db
       JWT_SECRET: super_secret_jwt_key_change_in_prod
-      JWT_EXPIRE_MINUTES: 60
     depends_on:
-      - account-db
+      - tuition-db
     networks:
-      - account-net
+      - tuition-net
 
 networks:
-  account-net:
+  tuition-net:
     driver: bridge
 
 volumes:
-  account_mysql_data:
+  tuition_mysql_data:

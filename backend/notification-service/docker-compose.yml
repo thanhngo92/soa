@@ -1,0 +1,62 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Notification Service — Standalone Microservice Docker Compose
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  notification-db:
+    image: mysql:8.0
+    container_name: notification-db
+    restart: unless-stopped
+    command: --port=8552
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: notification_db
+    ports:
+      - "8552:8552"
+    volumes:
+      - ../../init-db/init-mysql.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - notification_mysql_data:/var/lib/mysql
+    networks:
+      - notification-net
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit-notif
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - notification-net
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: notification-service
+    restart: unless-stopped
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8940"]
+    ports:
+      - "8940:8940"
+    environment:
+      MYSQL_HOST: notification-db
+      MYSQL_PORT: 8552
+      MYSQL_USER: root
+      MYSQL_PASSWORD: rootpassword
+      MYSQL_DATABASE: notification_db
+      JWT_SECRET: super_secret_jwt_key_change_in_prod
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      MAIL_FROM: noreply@ibanking.local
+    depends_on:
+      - notification-db
+      - mailpit
+    networks:
+      - notification-net
+
+networks:
+  notification-net:
+    driver: bridge
+
+volumes:
+  notification_mysql_data:

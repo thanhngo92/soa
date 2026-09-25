@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     
     # MySQL Database Configuration
     MYSQL_HOST: str = "localhost"
-    MYSQL_PORT: int = 3306
+    MYSQL_PORT: int = 8552
     MYSQL_USER: str = "account_user"
     MYSQL_PASSWORD: str = "account_password"
     MYSQL_DATABASE: str = "account_db"

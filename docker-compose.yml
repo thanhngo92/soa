@@ -6,7 +6,7 @@
 #   tuition-svc   : 8732
 #   payment-svc   : 8815
 #   notification  : 8940
-#   MongoDB       : 27017
+#   MySQL 8.0     : 8552  (Unified RDBMS on custom port 8552)
 #   Mailpit SMTP  : 1025
 #   Mailpit Web   : 8025  →  http://localhost:8025
 # ─────────────────────────────────────────────────────────────────────────────
@@ -14,15 +14,18 @@
 services:
 
   # ── Infrastructure ──────────────────────────────────────────────────────────
-  mongodb:
-    image: mongo:7
-    container_name: mongodb
+  mysql:
+    image: mysql:8.0
+    container_name: soa-mysql
     restart: unless-stopped
+    command: --port=8552
     ports:
-      - "27017:27017"
+      - "8552:8552"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
     volumes:
-      - mongo_data:/data/db
-      - ./init-db:/docker-entrypoint-initdb.d:ro
+      - mysql_data:/var/lib/mysql
+      - ./init-db/init-mysql.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - soa-net
 
@@ -36,24 +39,7 @@ services:
     networks:
       - soa-net
 
-  account-mysql:
-    image: mysql:8.0
-    container_name: account-mysql
-    restart: unless-stopped
-    ports:
-      - "3307:3306"
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: account_db
-      MYSQL_USER: account_user
-      MYSQL_PASSWORD: account_password
-    volumes:
-      - account_mysql_data:/var/lib/mysql
-      - ./backend/account-service/init-db:/docker-entrypoint-initdb.d:ro
-    networks:
-      - soa-net
-
-  # ── Backend Microservices ────────────────────────────────────────────────────
+  # ── Backend Microservices (All using MySQL with Database-Per-Service) ────────
   account-service:
     build:
       context: ./backend/account-service
@@ -63,15 +49,15 @@ services:
     ports:
       - "8661:8661"
     environment:
-      MYSQL_HOST: account-mysql
-      MYSQL_PORT: 3306
-      MYSQL_USER: account_user
-      MYSQL_PASSWORD: account_password
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 8552
+      MYSQL_USER: root
+      MYSQL_PASSWORD: rootpassword
       MYSQL_DATABASE: account_db
       JWT_SECRET: super_secret_jwt_key_change_in_prod
       JWT_EXPIRE_MINUTES: 60
     depends_on:
-      - account-mysql
+      - mysql
     networks:
       - soa-net
 
@@ -80,14 +66,18 @@ services:
       context: ./backend/tuition-service
     container_name: tuition-service
     restart: unless-stopped
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8732"]
     ports:
       - "8732:8732"
     environment:
-      MONGO_URI: mongodb://mongodb:27017
-      DATABASE_NAME: tuition_db
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 8552
+      MYSQL_USER: root
+      MYSQL_PASSWORD: rootpassword
+      MYSQL_DATABASE: tuition_db
       JWT_SECRET: super_secret_jwt_key_change_in_prod
     depends_on:
-      - mongodb
+      - mysql
     networks:
       - soa-net
 
@@ -96,17 +86,21 @@ services:
       context: ./backend/notification-service
     container_name: notification-service
     restart: unless-stopped
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8940"]
     ports:
       - "8940:8940"
     environment:
-      MONGO_URI: mongodb://mongodb:27017
-      DATABASE_NAME: notification_db
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 8552
+      MYSQL_USER: root
+      MYSQL_PASSWORD: rootpassword
+      MYSQL_DATABASE: notification_db
       JWT_SECRET: super_secret_jwt_key_change_in_prod
       SMTP_HOST: mailpit
       SMTP_PORT: 1025
       MAIL_FROM: noreply@ibanking.local
     depends_on:
-      - mongodb
+      - mysql
       - mailpit
     networks:
       - soa-net
@@ -116,17 +110,21 @@ services:
       context: ./backend/payment-service
     container_name: payment-service
     restart: unless-stopped
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8815"]
     ports:
       - "8815:8815"
     environment:
-      MONGO_URI: mongodb://mongodb:27017
-      DATABASE_NAME: payment_db
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 8552
+      MYSQL_USER: root
+      MYSQL_PASSWORD: rootpassword
+      MYSQL_DATABASE: payment_db
       JWT_SECRET: super_secret_jwt_key_change_in_prod
       ACCOUNT_SERVICE_URL: http://account-service:8661
       TUITION_SERVICE_URL: http://tuition-service:8732
       NOTIFICATION_SERVICE_URL: http://notification-service:8940
     depends_on:
-      - mongodb
+      - mysql
       - account-service
       - tuition-service
       - notification-service
@@ -160,5 +158,4 @@ networks:
     driver: bridge
 
 volumes:
-  mongo_data:
-  account_mysql_data:
+  mysql_data:
