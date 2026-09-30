@@ -1,98 +1,114 @@
-# API Gateway Architecture Specification
+# API Gateway — Tài Liệu Triển Khai Chi Tiết (Member 3)
 
-The API Gateway acts as the **Reverse Proxy & Centralized Entry Point** for all downstream Microservices, built with **Python + FastAPI + HTTPX**.
-
-* **Language & Runtime:** Python 3.11+
-* **Framework:** FastAPI (ASGI Uvicorn Server)
-* **HTTP Client:** HTTPX (Async Transport Engine)
-* **Port:** `8877`
-* **Allowed Origin (CORS):** `http://localhost:3659` (Frontend)
-* **Downstream Target:** Internal Docker Microservices
+> **Dự án:** iBanking Tuition Payment System (SOA)  
+> **Người phụ trách:** **Member 3** (Payment Service + API Gateway + Frontend Integration)  
+> **Công nghệ:** Python 3.11+ • FastAPI • HTTPX Reverse Proxy Engine  
+> **Port:** `8877` (Public Ingress)  
+> **Frontend Origin (CORS):** `http://localhost:3659`
 
 ---
 
-## 1. Request Lifecycle & Data Flow
+## 1. Mục Tiêu & Phạm Vi Công Việc
 
-```text
-client ──> cors/security ──> service resolution ──> async proxy transport ──> downstream service ──> response relay
-```
-
-### Processing Principles:
-1. **`client`**: Sends HTTP requests to the public ingress address `http://localhost:8877/api/{service}/{path}`.
-2. **`cors/security`**: Validates request origin, HTTP method, and headers against the configured CORS policy.
-3. **`service resolution`**: Parses the `{service}` identifier from the URL path to resolve the target downstream microservice Base URL.
-4. **`async proxy transport`**: Reconstructs the HTTP request (Method, Path, Query Params, Headers, Body) and asynchronously forwards it via `httpx.AsyncClient`.
-5. **`downstream service`**: Internal microservice processes the request and returns the response payload.
-6. **`response relay`**: Gateway receives upstream response and forwards it unchanged (Status Code, Response Body, Content-Type) back to the client.
+API Gateway là **Cổng vào tập trung duy nhất (Single Entry Point)** cho toàn bộ hệ thống iBanking SOA:
+1. **Định tuyến ngược (Reverse Proxy Routing)**: Nhận toàn bộ request từ Frontend và định tuyến đến đúng Microservice tương ứng.
+2. **Cấu hình CORS tập trung**: Cho phép Frontend tại `http://localhost:3659` gửi request, xử lý Preflight `OPTIONS`.
+3. **Bảo toàn Header & Token**: Giữ nguyên header xác thực `Authorization: Bearer <JWT>`, `Content-Type`,... khi chuyển tiếp xuống backend.
+4. **Chuẩn hóa lỗi hệ thống**: Trả về định dạng JSON thống nhất khi microservice đích bị sập (`502 Bad Gateway`) hoặc timeout (`504 Gateway Timeout`).
+5. **Health Check Probe**: Cung cấp endpoint `GET /health` để giám sát trạng thái hoạt động của gateway.
 
 ---
 
-## 2. Directory Skeleton
+## 2. Bảng Ánh Xạ Định Tuyến (Routing Table)
+
+| Public Path qua Gateway (`:8877`) | Dịch Vụ Đích | URL Nội Bộ / Mặc Định | Mô Tả |
+|:---|:---|:---|:---|
+| `/api/accounts/*` | **Account Service** | `http://localhost:8661/api/accounts/*` | Đăng nhập, Profile, Số dư |
+| `/api/tuitions/*` | **Tuition Service** | `http://localhost:8732/api/tuitions/*` | Tra cứu học phí, gạch nợ |
+| `/api/payments/*` | **Payment Service** | `http://localhost:8815/api/payments/*` | Khởi tạo, xác nhận OTP, lịch sử |
+| `/api/notifications/*` | **Notification Service** | `http://localhost:8940/api/notifications/*` | Sinh OTP, verify OTP, gửi mail |
+| `/health` | **API Gateway** | Trực tiếp xử lý | Giám sát trạng thái hoạt động |
+
+---
+
+## 3. Cấu Trúc Thư Mục
 
 ```text
 api-gateway/
 ├── Dockerfile                   # Container build specification
-├── requirements.txt             # Gateway dependencies (FastAPI, Uvicorn, HTTPX, Pydantic-settings)
-├── .env.example                 # Downstream services URL template
-├── README.md
+├── requirements.txt             # Dependencies: fastapi, uvicorn, httpx, pydantic-settings
+├── .env.example                 # Mẫu URL các microservice
+├── README.md                    # Tài liệu hướng dẫn này
 │
 └── app/
-    ├── main.py                  # Gateway entrypoint, CORS setup, proxy routing, lifespan
+    ├── main.py                  # Khởi tạo FastAPI app, lifespan httpx.AsyncClient, định tuyến proxy /api/{service}/{path}
     │
-    ├── config/                  # Configuration Layer
-    │   └── env.py               # Downstream service URLs mapping from environment
+    ├── config/
+    │   └── env.py               # SERVICE_MAP và cấu hình URL các dịch vụ
     │
-    ├── middlewares/             # Gateway Middleware Layer
-    │   ├── cors.py              # Cross-Origin Resource Sharing policy
-    │   └── logging.py           # Access request/response logging
+    ├── middlewares/
+    │   ├── cors.py              # Cấu hình CORS middleware
+    │   └── logging.py           # Log chi tiết thời gian xử lý và mã trạng thái
     │
-    └── utils/                   # Proxy Utilities
-        └── forwarder.py         # HTTP header sanitization & async streaming forwarder
+    └── utils/
+        └── forwarder.py         # Hàm forward_request: lọc hop-by-hop headers, proxy async
 ```
 
 ---
 
-## 3. Layer Responsibilities
+## 4. Cấu Hình Biến Môi Trường (`.env`)
 
-| Layer / Folder | Responsibility | Constraints |
-| :--- | :--- | :--- |
-| **`config/`** | Reads and manages internal microservice URLs from environment variables. | No hardcoded IPs/Ports in source code. |
-| **`middlewares/`** | Handles centralized CORS, request logging, and latency measurements. | Must be low-latency, non-blocking asynchronous execution. |
-| **`utils/forwarder.py`** | Sanitizes hop-by-hop headers (`host`, `connection`), wraps and forwards payloads via HTTPX. | Must preserve security authentication headers (`Authorization: Bearer ...`). |
-| **`main.py`** | Initializes FastAPI application, registers middlewares, exposes `/health` endpoint, defines dynamic proxy route. | **Strictly no business logic**, no database access. Exclusively network ingress coordination. |
+Tạo file `.env` từ `.env.example`:
+```ini
+ACCOUNT_SERVICE_URL=http://localhost:8661
+TUITION_SERVICE_URL=http://localhost:8732
+PAYMENT_SERVICE_URL=http://localhost:8815
+NOTIFICATION_SERVICE_URL=http://localhost:8940
 
----
-
-## 4. Routing & Proxy Architecture Rules
-
-1. **Service Resolution Policy:**
-   - Valid URL path format: `/api/{service_name}/{endpoint_path}`.
-   - Gateway maps `{service_name}` to corresponding environment variables:
-     `{service_name}` $\longrightarrow$ `{SERVICE_NAME}_SERVICE_URL`
-   - If `{service_name}` is not registered in the service directory, returns `404 Not Found`.
-
-2. **Header & Security Propagation:**
-   - **Strip:** Hop-by-hop headers at the transport layer (`Host`, `Connection`, `Transfer-Encoding`).
-   - **Propagate:** Preserves `Authorization`, `Content-Type`, and `Accept` headers to downstream services.
-
-3. **Fault Tolerance & Timeouts:**
-   - Default HTTP client request timeout is set to `30.0s`.
-   - If a downstream service is unreachable or times out, returns standardized JSON with `502 Bad Gateway` or `504 Gateway Timeout`.
-
-4. **Health Check Endpoint:**
-   - Exposes `GET /health` to verify gateway operational status for Docker container healthchecks.
+ALLOWED_ORIGINS=http://localhost:3659,http://127.0.0.1:3659
+```
 
 ---
 
-## 5. Development Commands
+## 5. Hướng Dẫn Chạy & Kiểm Thử
 
+### 5.1 Cài đặt & Khởi chạy Gateway độc lập (Port 8877)
 ```bash
-# Install dependencies
+cd api-gateway
+python -m venv venv
+venv\Scripts\activate      # Windows
 pip install -r requirements.txt
-
-# Run Gateway independently (Local Dev Mode)
 uvicorn app.main:app --host 0.0.0.0 --port 8877 --reload
-
-# Build and start via Docker Compose
-docker compose up --build api-gateway
 ```
+
+### 5.2 Kiểm thử định tuyến qua Gateway bằng cURL
+
+#### 1. Kiểm tra Health Check:
+```bash
+curl -X GET http://localhost:8877/health
+# Trả về: {"status":"ok","service":"api-gateway"}
+```
+
+#### 2. Test Proxy đến Account Service:
+```bash
+curl -X POST http://localhost:8877/api/accounts/login \
+  -H "Content-Type: application/json" \
+  -d "{\"username\": \"sv.nguyen\", \"password\": \"Test@123\"}"
+```
+
+#### 3. Test Proxy đến Tuition Service:
+```bash
+curl -X GET http://localhost:8877/api/tuitions/students/521H0001
+```
+
+---
+
+## 6. Bảng Kiểm Tra Nghiệm Thu (Checklist Cho Member 3)
+
+- [ ] Định tuyến chính xác `/api/accounts/*` tới Account Service (:8661).
+- [ ] Định tuyến chính xác `/api/tuitions/*` tới Tuition Service (:8732).
+- [ ] Định tuyến chính xác `/api/payments/*` tới Payment Service (:8815).
+- [ ] Định tuyến chính xác `/api/notifications/*` tới Notification Service (:8940).
+- [ ] Xử lý CORS thành công cho Frontend Origin `http://localhost:3659`.
+- [ ] Giữ nguyên Header `Authorization: Bearer ...` khi forward request.
+- [ ] Trả về JSON chuẩn khi service con không phản hồi (`502` / `504`).
