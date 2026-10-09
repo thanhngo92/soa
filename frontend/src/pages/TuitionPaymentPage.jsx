@@ -19,7 +19,9 @@ import {
   CreditCard,
   AlertCircle,
   Loader2,
-  CheckCircle2
+  CheckCircle2,
+  Mail,
+  Phone
 } from 'lucide-react'
 
 export default function TuitionPaymentPage() {
@@ -103,6 +105,21 @@ export default function TuitionPaymentPage() {
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tài khoản thanh toán</p>
               <h2 className="text-lg font-bold text-foreground">{profile.full_name} ({profile.username})</h2>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground">
+                {profile.email && (
+                  <span className="flex items-center gap-1">
+                    <Mail className="h-3.5 w-3.5 text-primary/70" />
+                    <span>{profile.email}</span>
+                  </span>
+                )}
+                {profile.email && profile.phone && <span className="text-muted-foreground/40">•</span>}
+                {profile.phone && (
+                  <span className="flex items-center gap-1">
+                    <Phone className="h-3.5 w-3.5 text-primary/70" />
+                    <span>{profile.phone}</span>
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           <div className="sm:text-right">
