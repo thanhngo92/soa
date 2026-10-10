@@ -25,13 +25,14 @@ import {
 } from 'lucide-react'
 
 export default function TuitionPaymentPage() {
-  const [profile, setProfile]   = useState(null)
-  const [mssv, setMssv]         = useState('521H0002')
-  const [tuition, setTuition]   = useState(null)
+  const [profile, setProfile]     = useState(null)
+  const [mssv, setMssv]           = useState('521H0002')
+  const [tuition, setTuition]     = useState(null)
   const [paymentId, setPaymentId] = useState(null)
-  const [receipt, setReceipt]   = useState(null)
-  const [showOtp, setShowOtp]   = useState(false)
-  const [error, setError]       = useState('')
+  const [receipt, setReceipt]     = useState(null)
+  const [showOtp, setShowOtp]     = useState(false)
+  const [agreeTerms, setAgreeTerms] = useState(false)
+  const [error, setError]         = useState('')
   const [searchLoading, setSearchLoading] = useState(false)
   const [payLoading, setPayLoading]       = useState(false)
 
@@ -52,6 +53,7 @@ export default function TuitionPaymentPage() {
     e.preventDefault()
     setError('')
     setTuition(null)
+    setAgreeTerms(false)
     setSearchLoading(true)
     try {
       const res = await getTuitionApi(mssv.trim())
@@ -85,6 +87,7 @@ export default function TuitionPaymentPage() {
       setShowOtp(false)
       setReceipt(res.data.data)
       setTuition(null)
+      setAgreeTerms(false)
       fetchProfile() // Refresh balance after payment
     } catch (err) {
       setError(err.response?.data?.error?.message || 'Xác nhận OTP thất bại')
@@ -92,6 +95,10 @@ export default function TuitionPaymentPage() {
       setPayLoading(false)
     }
   }
+
+  const hasSufficientBalance = profile && tuition ? profile.balance >= tuition.amount : false
+  const remainingBalance = profile && tuition ? profile.balance - tuition.amount : 0
+  const isPayable = tuition?.status === 'UNPAID' && hasSufficientBalance && agreeTerms && !payLoading
 
   return (
     <div className="container mx-auto max-w-4xl py-8 px-4 sm:px-6 space-y-6">
@@ -225,40 +232,93 @@ export default function TuitionPaymentPage() {
                   </div>
                 </div>
 
-                <div className="p-4 rounded-xl border bg-primary/5 flex items-center justify-between">
-                  <div>
-                    <span className="text-xs text-muted-foreground block">Số tiền học phí</span>
-                    <span className="text-2xl font-black text-primary">{formatCurrency(tuition.amount)}</span>
+                {/* Chi tiết tài chính thanh toán */}
+                <div className="p-4 rounded-xl border bg-card space-y-2.5">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Số dư khả dụng của bạn:</span>
+                    <span className="font-semibold text-foreground font-mono">
+                      {formatCurrency(profile?.balance || 0)}
+                    </span>
                   </div>
-                  {tuition.status === 'PAID' && (
-                    <div className="flex items-center gap-1.5 text-xs text-green-600 font-medium">
-                      <CheckCircle2 className="h-4 w-4" />
-                      Hoàn thành
-                    </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Số tiền cần thanh toán:</span>
+                    <span className="font-black text-primary text-base font-mono">
+                      {formatCurrency(tuition.amount)}
+                    </span>
+                  </div>
+                  {tuition.status === 'UNPAID' && (
+                    <>
+                      <Separator />
+                      <div className="flex items-center justify-between text-xs pt-0.5">
+                        <span className="text-muted-foreground">Số dư ước tính sau thanh toán:</span>
+                        <span className={`font-mono font-semibold ${hasSufficientBalance ? 'text-green-600' : 'text-destructive'}`}>
+                          {formatCurrency(remainingBalance)}
+                        </span>
+                      </div>
+                    </>
                   )}
                 </div>
+
+                {/* Cảnh báo nếu số dư không đủ */}
+                {tuition.status === 'UNPAID' && !hasSufficientBalance && profile && (
+                  <div className="flex items-center gap-2.5 p-3 rounded-xl border border-destructive/30 bg-destructive/10 text-destructive text-sm font-semibold">
+                    <AlertCircle className="h-5 w-5 shrink-0" />
+                    <span>Số dư khả dụng không đủ để thanh toán</span>
+                  </div>
+                )}
+
+                {/* Các thỏa thuận và điều khoản của hệ thống */}
+                {tuition.status === 'UNPAID' && (
+                  <div className="pt-1">
+                    <label className="flex items-start gap-2.5 cursor-pointer p-3 rounded-xl border bg-muted/20 hover:bg-muted/30 transition-colors select-none">
+                      <input
+                        type="checkbox"
+                        id="agree-terms"
+                        checked={agreeTerms}
+                        onChange={(e) => setAgreeTerms(e.target.checked)}
+                        disabled={!hasSufficientBalance}
+                        className="mt-0.5 h-4 w-4 rounded border-input text-primary focus:ring-primary accent-primary cursor-pointer disabled:cursor-not-allowed"
+                      />
+                      <span className="text-xs text-foreground leading-relaxed">
+                        Tôi đồng ý với <strong>các thỏa thuận và điều khoản của hệ thống</strong>.
+                      </span>
+                    </label>
+                  </div>
+                )}
               </CardContent>
 
               <CardFooter className="pt-0">
                 {tuition.status === 'UNPAID' ? (
-                  <Button
-                    onClick={handleInitiate}
-                    disabled={payLoading || (profile && profile.balance < tuition.amount)}
-                    className="w-full gap-2"
-                    size="lg"
-                  >
-                    {payLoading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Đang xử lý...
-                      </>
-                    ) : (
-                      <>
-                        <CreditCard className="h-5 w-5" />
-                        Thanh toán qua iBanking ({formatCurrency(tuition.amount)})
-                      </>
+                  <div className="w-full space-y-2">
+                    <Button
+                      onClick={handleInitiate}
+                      disabled={!isPayable}
+                      className="w-full gap-2 text-base py-5"
+                      size="lg"
+                    >
+                      {payLoading ? (
+                        <>
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                          Đang khởi tạo giao dịch...
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="h-5 w-5" />
+                          Xác nhận giao dịch ({formatCurrency(tuition.amount)})
+                        </>
+                      )}
+                    </Button>
+
+                    {!isPayable && (
+                      <p className="text-center text-xs text-muted-foreground">
+                        {!hasSufficientBalance
+                          ? '⚠️ Nút bị khóa do số dư khả dụng không đủ để thanh toán.'
+                          : !agreeTerms
+                          ? '⚠️ Vui lòng tích chọn đồng ý với điều khoản để kích hoạt nút xác nhận.'
+                          : ''}
+                      </p>
                     )}
-                  </Button>
+                  </div>
                 ) : (
                   <div className="w-full text-center text-sm text-green-600 font-medium py-2">
                     Khoản học phí này đã được gạch nợ thành công.
@@ -279,6 +339,7 @@ export default function TuitionPaymentPage() {
           )}
         </div>
       </div>
+
 
       {showOtp && (
         <OtpModal
