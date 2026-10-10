@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     TUITION_SERVICE_URL: str = "http://tuition-service:8732"
     PAYMENT_SERVICE_URL: str = "http://payment-service:8815"
     NOTIFICATION_SERVICE_URL: str = "http://notification-service:8940"
-    ALLOWED_ORIGIN: str = "http://localhost:3659"
+    ALLOWED_ORIGIN: str = "http://localhost:5173,http://127.0.0.1:5173"
 
     class Config:
         env_file = ".env"

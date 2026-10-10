@@ -94,8 +94,7 @@ backend/payment-service/
     │   └── payment_repository.py# Thao tác bảng payments trong payment_db
     │
     ├── schemas/
-    │   ├── payment_schema.py    # DTO: InitiatePaymentRequest, ConfirmPaymentRequest,...
-    │   └── payment_document.py  # Mô tả cấu trúc bảng payments
+    │   └── payment_schema.py    # DTO: InitiatePaymentRequest, ConfirmPaymentRequest,...
     │
     └── utils/
         ├── response_util.py     # Chuẩn hóa JSON response
@@ -297,7 +296,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8815 --reload
 ```
 
 ### 8.2 Kịch bản kiểm thử toàn trình (End-to-End Test):
-1. **Đăng nhập:** Gọi Account Service `POST /api/accounts/login` lấy token của `sv.nguyen`.
+1. **Đăng nhập:** Gọi Account Service `POST /api/accounts/login` lấy token của `user01`.
 2. **Khởi tạo Payment:**
    ```bash
    curl -X POST http://localhost:8815/api/payments/initiate \
@@ -314,7 +313,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8815 --reload
      -d "{\"payment_id\": \"1\", \"otp_code\": \"<MA_OTP_MAILPIT>\"}"
    ```
 5. **Kiểm tra kết quả:**
-   * Số dư của `sv.nguyen` giảm từ 7,500,000 xuống 2,650,000 VND (`GET /me`).
+   * Số dư của `user01` giảm từ 7,500,000 xuống 2,650,000 VND (`GET /me`).
    * Trạng thái học phí của `521H0001` chuyển thành `PAID` (`GET /students/521H0001`).
    * Mailpit nhận được email thông báo biên nhận thanh toán thành công.
    * `GET /api/payments/history` hiển thị giao dịch vừa hoàn tất với trạng thái `SUCCESS`.

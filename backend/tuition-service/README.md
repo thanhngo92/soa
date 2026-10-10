@@ -50,8 +50,7 @@ backend/tuition-service/
     │   └── tuition_repository.py# Thao tác SQL (Atomic UPDATE, SELECT)
     │
     ├── schemas/
-    │   ├── tuition_schema.py    # DTO: PayTuitionRequest, RevertTuitionRequest,...
-    │   └── tuition_document.py  # Mô tả schema bảng tuitions
+    │   └── tuition_schema.py    # DTO: PayTuitionRequest, RevertTuitionRequest,...
     │
     └── utils/
         ├── response_util.py     # Chuẩn hóa JSON response

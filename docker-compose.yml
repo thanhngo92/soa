@@ -1,7 +1,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # Network ports summary:
-#   Frontend      : 3659  (local dev only, not in compose)
-#   API Gateway   : 8877
+#   Frontend      : 5173  →  http://localhost:5173
+#   API Gateway   : 8877  →  http://localhost:8877/health
 #   account-svc   : 8661
 #   tuition-svc   : 8732
 #   payment-svc   : 8815
@@ -25,7 +25,10 @@ services:
       MYSQL_ROOT_PASSWORD: rootpassword
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./init-db/init-mysql.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./backend/account-service/db/init.sql:/docker-entrypoint-initdb.d/01-account.sql:ro
+      - ./backend/tuition-service/db/init.sql:/docker-entrypoint-initdb.d/02-tuition.sql:ro
+      - ./backend/payment-service/db/init.sql:/docker-entrypoint-initdb.d/03-payment.sql:ro
+      - ./backend/notification-service/db/init.sql:/docker-entrypoint-initdb.d/04-notification.sql:ro
     networks:
       - soa-net
 
@@ -39,7 +42,7 @@ services:
     networks:
       - soa-net
 
-  # ── Backend Microservices (All using MySQL with Database-Per-Service) ────────
+  # ── Backend Microservices ────────
   account-service:
     build:
       context: ./backend/account-service
@@ -47,7 +50,9 @@ services:
     restart: unless-stopped
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8661"]
     ports:
-      - "8661:8661"
+      - "127.0.0.1:8661:8661"
+    volumes:
+      - ./backend/account-service:/app
     environment:
       MYSQL_HOST: mysql
       MYSQL_PORT: 8552
@@ -56,6 +61,7 @@ services:
       MYSQL_DATABASE: account_db
       JWT_SECRET: super_secret_jwt_key_change_in_prod
       JWT_EXPIRE_MINUTES: 60
+      INTERNAL_SERVICE_KEY: super_internal_service_secret_key_2026
     depends_on:
       - mysql
     networks:
@@ -68,7 +74,9 @@ services:
     restart: unless-stopped
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8732"]
     ports:
-      - "8732:8732"
+      - "127.0.0.1:8732:8732"
+    volumes:
+      - ./backend/tuition-service:/app
     environment:
       MYSQL_HOST: mysql
       MYSQL_PORT: 8552
@@ -76,6 +84,7 @@ services:
       MYSQL_PASSWORD: rootpassword
       MYSQL_DATABASE: tuition_db
       JWT_SECRET: super_secret_jwt_key_change_in_prod
+      INTERNAL_SERVICE_KEY: super_internal_service_secret_key_2026
     depends_on:
       - mysql
     networks:
@@ -88,7 +97,9 @@ services:
     restart: unless-stopped
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8940"]
     ports:
-      - "8940:8940"
+      - "127.0.0.1:8940:8940"
+    volumes:
+      - ./backend/notification-service:/app
     environment:
       MYSQL_HOST: mysql
       MYSQL_PORT: 8552
@@ -96,6 +107,7 @@ services:
       MYSQL_PASSWORD: rootpassword
       MYSQL_DATABASE: notification_db
       JWT_SECRET: super_secret_jwt_key_change_in_prod
+      INTERNAL_SERVICE_KEY: super_internal_service_secret_key_2026
       SMTP_HOST: mailpit
       SMTP_PORT: 1025
       MAIL_FROM: noreply@ibanking.local
@@ -112,7 +124,9 @@ services:
     restart: unless-stopped
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8815"]
     ports:
-      - "8815:8815"
+      - "127.0.0.1:8815:8815"
+    volumes:
+      - ./backend/payment-service:/app
     environment:
       MYSQL_HOST: mysql
       MYSQL_PORT: 8552
@@ -120,6 +134,7 @@ services:
       MYSQL_PASSWORD: rootpassword
       MYSQL_DATABASE: payment_db
       JWT_SECRET: super_secret_jwt_key_change_in_prod
+      INTERNAL_SERVICE_KEY: super_internal_service_secret_key_2026
       ACCOUNT_SERVICE_URL: http://account-service:8661
       TUITION_SERVICE_URL: http://tuition-service:8732
       NOTIFICATION_SERVICE_URL: http://notification-service:8940
@@ -139,17 +154,33 @@ services:
     restart: unless-stopped
     ports:
       - "8877:8877"
+    volumes:
+      - ./api-gateway:/app
     environment:
       ACCOUNT_SERVICE_URL: http://account-service:8661
       TUITION_SERVICE_URL: http://tuition-service:8732
       PAYMENT_SERVICE_URL: http://payment-service:8815
       NOTIFICATION_SERVICE_URL: http://notification-service:8940
-      ALLOWED_ORIGIN: http://localhost:3659
+      ALLOWED_ORIGIN: http://localhost:5173,http://127.0.0.1:5173,http://localhost:3659,http://127.0.0.1:3659
     depends_on:
       - account-service
       - tuition-service
       - payment-service
       - notification-service
+    networks:
+      - soa-net
+
+  # ── Frontend Web Application ────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+    container_name: frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+      - "3659:5173"
+    depends_on:
+      - api-gateway
     networks:
       - soa-net
 

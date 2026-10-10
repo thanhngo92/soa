@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     
     JWT_SECRET: str = "change_me_to_a_secure_secret"
     JWT_EXPIRE_MINUTES: int = 60
+    INTERNAL_SERVICE_KEY: str = "super_internal_service_secret_key_2026"
     SMTP_HOST: str = "mailpit"
     SMTP_PORT: int = 1025
     MAIL_FROM: str = "noreply@ibanking.local"

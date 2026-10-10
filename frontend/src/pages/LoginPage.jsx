@@ -6,12 +6,12 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { GraduationCap, AlertCircle, Loader2 } from 'lucide-react'
+import { AlertCircle, Loader2 } from 'lucide-react'
 
 export default function LoginPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
-  const [form, setForm] = useState({ username: 'sv.nguyen', password: 'Test@123' })
+  const [form, setForm] = useState({ username: '', password: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -31,23 +31,25 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 bg-muted/20">
-      <Card className="w-full max-w-md shadow-lg border-muted">
-        <CardHeader className="space-y-2 text-center pb-6">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md">
-            <GraduationCap className="h-6 w-6" />
-          </div>
-          <CardTitle className="text-2xl font-bold tracking-tight">Cổng iBanking TDTU</CardTitle>
-          <CardDescription>Đăng nhập tài khoản ngân hàng để đóng học phí</CardDescription>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-muted/20">
+      <Card className="w-full max-w-md shadow-sm border bg-card">
+        <CardHeader className="space-y-1.5 text-center pb-6">
+          <CardTitle className="text-2xl font-bold tracking-tight text-foreground">
+            iBanking TDTU
+          </CardTitle>
+          <CardDescription className="text-sm text-muted-foreground">
+            Đăng nhập tài khoản
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Tên tài khoản</Label>
+              <Label htmlFor="username">Tên đăng nhập</Label>
               <Input
                 id="username"
                 type="text"
-                placeholder="sv.nguyen"
+                placeholder="Tên đăng nhập"
+                autoComplete="username"
                 value={form.username}
                 onChange={(e) => setForm({ ...form, username: e.target.value })}
                 required
@@ -58,7 +60,8 @@ export default function LoginPage() {
               <Input
                 id="password"
                 type="password"
-                placeholder="••••••••"
+                placeholder="Mật khẩu"
+                autoComplete="current-password"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 required
@@ -72,24 +75,17 @@ export default function LoginPage() {
               </div>
             )}
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium h-11 text-base shadow-sm" disabled={loading}>
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Đang đăng nhập...
+                  Đang xử lý...
                 </>
               ) : (
                 'Đăng nhập'
               )}
             </Button>
           </form>
-
-          <div className="mt-6 pt-4 border-t text-xs text-muted-foreground space-y-1">
-            <p className="font-semibold text-foreground">Tài khoản thử nghiệm:</p>
-            <p className="font-mono">sv.nguyen / Test@123 (Số dư: 7.500.000 đ)</p>
-            <p className="font-mono">sv.tran / Test@123 (Số dư: 2.300.000 đ)</p>
-            <p className="font-mono">sv.le / Ibank@456 (Số dư: 12.000.000 đ)</p>
-          </div>
         </CardContent>
       </Card>
     </div>

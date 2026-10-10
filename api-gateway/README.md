@@ -14,8 +14,10 @@ API Gateway là **Cổng vào tập trung duy nhất (Single Entry Point)** cho 
 1. **Định tuyến ngược (Reverse Proxy Routing)**: Nhận toàn bộ request từ Frontend và định tuyến đến đúng Microservice tương ứng.
 2. **Cấu hình CORS tập trung**: Cho phép Frontend tại `http://localhost:3659` gửi request, xử lý Preflight `OPTIONS`.
 3. **Bảo toàn Header & Token**: Giữ nguyên header xác thực `Authorization: Bearer <JWT>`, `Content-Type`,... khi chuyển tiếp xuống backend.
-4. **Chuẩn hóa lỗi hệ thống**: Trả về định dạng JSON thống nhất khi microservice đích bị sập (`502 Bad Gateway`) hoặc timeout (`504 Gateway Timeout`).
-5. **Health Check Probe**: Cung cấp endpoint `GET /health` để giám sát trạng thái hoạt động của gateway.
+4. **Kiểm soát tính bất biến (Idempotency Engine)**: Đọc Header `Idempotency-Key` trên các request thay đổi dữ liệu (`POST`, `PUT`,...), cache response (TTL 5 phút) để trả về ngay kết quả cho client nếu bị gọi lặp lại do rớt mạng hoặc người dùng click đúp.
+5. **Workflow Guard**: Chặn từ chối các request bên ngoài gọi tắt vào các endpoint nội bộ nhạy cảm.
+6. **Chuẩn hóa lỗi hệ thống**: Trả về định dạng JSON thống nhất khi microservice đích bị sập (`502 Bad Gateway`) hoặc timeout (`504 Gateway Timeout`).
+7. **Health Check Probe**: Cung cấp endpoint `GET /health` để giám sát trạng thái hoạt động của gateway.
 
 ---
 
@@ -93,7 +95,7 @@ curl -X GET http://localhost:8877/health
 ```bash
 curl -X POST http://localhost:8877/api/accounts/login \
   -H "Content-Type: application/json" \
-  -d "{\"username\": \"sv.nguyen\", \"password\": \"Test@123\"}"
+  -d "{\"username\": \"user01\", \"password\": \"Test@123\"}"
 ```
 
 #### 3. Test Proxy đến Tuition Service:

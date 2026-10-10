@@ -3,6 +3,7 @@ import { getTuitionApi } from '@/services/tuitionService'
 import { initiatePaymentApi, confirmPaymentApi } from '@/services/paymentService'
 import { getMeApi } from '@/services/authService'
 import { formatCurrency } from '@/utils/formatters'
+import { isValidMssv } from '@/utils/validators'
 import OtpModal from '@/components/OtpModal'
 import ReceiptModal from '@/components/ReceiptModal'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
@@ -25,14 +26,16 @@ import {
 } from 'lucide-react'
 
 export default function TuitionPaymentPage() {
-  const [profile, setProfile]     = useState(null)
-  const [mssv, setMssv]           = useState('521H0002')
-  const [tuition, setTuition]     = useState(null)
+  const [profile, setProfile]   = useState(null)
+  const [mssv, setMssv]         = useState('')
+  const [tuition, setTuition]   = useState(null)
   const [paymentId, setPaymentId] = useState(null)
-  const [receipt, setReceipt]     = useState(null)
-  const [showOtp, setShowOtp]     = useState(false)
-  const [agreeTerms, setAgreeTerms] = useState(false)
-  const [error, setError]         = useState('')
+  const [idempotencyKey, setIdempotencyKey] = useState('')
+  const [receipt, setReceipt]   = useState(null)
+  const [showOtp, setShowOtp]   = useState(false)
+  const [agreedTerms, setAgreedTerms] = useState(false)
+  const [error, setError]       = useState('')
+  const [otpError, setOtpError] = useState('')
   const [searchLoading, setSearchLoading] = useState(false)
   const [payLoading, setPayLoading]       = useState(false)
 
@@ -49,14 +52,18 @@ export default function TuitionPaymentPage() {
     fetchProfile()
   }, [])
 
-  const handleSearch = async (e) => {
-    e.preventDefault()
+  const executeSearch = async (studentId) => {
+    const trimmedMssv = studentId.trim().toUpperCase()
+    if (!isValidMssv(trimmedMssv)) {
+      return
+    }
     setError('')
+    setOtpError('')
     setTuition(null)
-    setAgreeTerms(false)
+    setAgreedTerms(false)
     setSearchLoading(true)
     try {
-      const res = await getTuitionApi(mssv.trim())
+      const res = await getTuitionApi(trimmedMssv)
       setTuition(res.data.data)
     } catch (err) {
       setError(err.response?.data?.error?.message || 'Không tìm thấy thông tin sinh viên hoặc học phí')
@@ -65,12 +72,38 @@ export default function TuitionPaymentPage() {
     }
   }
 
+  // Tự động tra cứu khi người dùng nhập đủ MSSV hợp lệ (Debounce 500ms)
+  useEffect(() => {
+    const trimmed = mssv.trim().toUpperCase()
+    if (isValidMssv(trimmed)) {
+      const timer = setTimeout(() => {
+        executeSearch(trimmed)
+      }, 500)
+      return () => clearTimeout(timer)
+    }
+  }, [mssv])
+
+  const handleSearch = (e) => {
+    if (e) e.preventDefault()
+    const trimmed = mssv.trim().toUpperCase()
+    if (!isValidMssv(trimmed)) {
+      setError('Mã sinh viên không hợp lệ (cần từ 6 đến 10 ký tự chữ và số)')
+      return
+    }
+    executeSearch(trimmed)
+  }
+
   const handleInitiate = async () => {
     setError('')
+    setOtpError('')
     setPayLoading(true)
     try {
       const res = await initiatePaymentApi(tuition.student_id)
       setPaymentId(res.data.data.payment_id)
+      const key = typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `pay-${res.data.data.payment_id}-${Date.now()}`
+      setIdempotencyKey(key)
       setShowOtp(true)
     } catch (err) {
       setError(err.response?.data?.error?.message || 'Không thể khởi tạo giao dịch thanh toán')
@@ -81,272 +114,254 @@ export default function TuitionPaymentPage() {
 
   const handleConfirm = async (otpCode) => {
     setPayLoading(true)
-    setError('')
+    setOtpError('')
     try {
-      const res = await confirmPaymentApi(paymentId, otpCode)
+      const res = await confirmPaymentApi(paymentId, otpCode, idempotencyKey)
       setShowOtp(false)
       setReceipt(res.data.data)
       setTuition(null)
-      setAgreeTerms(false)
       fetchProfile() // Refresh balance after payment
     } catch (err) {
-      setError(err.response?.data?.error?.message || 'Xác nhận OTP thất bại')
+      setOtpError(err.response?.data?.error?.message || 'Xác nhận OTP thất bại')
     } finally {
       setPayLoading(false)
     }
   }
 
-  const hasSufficientBalance = profile && tuition ? profile.balance >= tuition.amount : false
-  const remainingBalance = profile && tuition ? profile.balance - tuition.amount : 0
-  const isPayable = tuition?.status === 'UNPAID' && hasSufficientBalance && agreeTerms && !payLoading
-
   return (
     <div className="container mx-auto max-w-4xl py-8 px-4 sm:px-6 space-y-6">
-      {/* Account Balance Card */}
+      {/* 1. Thẻ tài khoản thanh toán */}
       {profile && (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow">
-              <Wallet className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tài khoản thanh toán</p>
-              <h2 className="text-lg font-bold text-foreground">{profile.full_name} ({profile.username})</h2>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground">
-                {profile.email && (
-                  <span className="flex items-center gap-1">
-                    <Mail className="h-3.5 w-3.5 text-primary/70" />
-                    <span>{profile.email}</span>
-                  </span>
-                )}
-                {profile.email && profile.phone && <span className="text-muted-foreground/40">•</span>}
-                {profile.phone && (
-                  <span className="flex items-center gap-1">
-                    <Phone className="h-3.5 w-3.5 text-primary/70" />
-                    <span>{profile.phone}</span>
-                  </span>
-                )}
+        <Card className="shadow-sm border">
+          <CardContent className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
+                <Wallet className="h-5 w-5" />
               </div>
-            </div>
-          </div>
-          <div className="sm:text-right">
-            <p className="text-xs text-muted-foreground">Số dư khả dụng</p>
-            <p className="text-2xl font-black text-primary">{formatCurrency(profile.balance)}</p>
-          </div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-        {/* Search Box */}
-        <Card className="md:col-span-5 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Search className="h-5 w-5 text-primary" />
-              Tra cứu học phí
-            </CardTitle>
-            <CardDescription>Nhập Mã số sinh viên (MSSV) để kiểm tra nợ học phí</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSearch} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="mssv">Mã số sinh viên (MSSV)</Label>
-                <Input
-                  id="mssv"
-                  type="text"
-                  placeholder="VD: 521H0002"
-                  value={mssv}
-                  onChange={(e) => setMssv(e.target.value.toUpperCase())}
-                  required
-                  className="font-mono uppercase"
-                />
-              </div>
-
-              {error && (
-                <div className="flex items-start gap-2 p-3 text-sm text-destructive bg-destructive/10 rounded-lg border border-destructive/20">
-                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                  <span>{error}</span>
+              <div className="space-y-0.5">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tài khoản thanh toán</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="text-base font-bold text-foreground">{profile.full_name}</h2>
+                  <Badge variant="secondary" className="font-mono text-xs">
+                    {profile.username}
+                  </Badge>
                 </div>
-              )}
-
-              <Button type="submit" className="w-full gap-2" disabled={searchLoading}>
-                {searchLoading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Đang tra cứu...
-                  </>
-                ) : (
-                  <>
-                    <Search className="h-4 w-4" />
-                    Tra cứu ngay
-                  </>
-                )}
-              </Button>
-            </form>
-
-            <div className="mt-4 pt-3 border-t text-xs text-muted-foreground space-y-1">
-              <p className="font-semibold text-foreground">MSSV mẫu nợ học phí:</p>
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {['521H0001', '521H0002', '521H0003', '522H0017', '522H0041', '523H0089'].map((id) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => setMssv(id)}
-                    className="font-mono text-xs px-2 py-0.5 bg-muted rounded hover:bg-muted/80 border text-foreground"
-                  >
-                    {id}
-                  </button>
-                ))}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground pt-0.5">
+                  {profile.email && (
+                    <span className="flex items-center gap-1">
+                      <Mail className="h-3.5 w-3.5 text-muted-foreground/70" />
+                      <span>{profile.email}</span>
+                    </span>
+                  )}
+                  {profile.email && profile.phone && <span className="text-border">•</span>}
+                  {profile.phone && (
+                    <span className="flex items-center gap-1">
+                      <Phone className="h-3.5 w-3.5 text-muted-foreground/70" />
+                      <span>{profile.phone}</span>
+                    </span>
+                  )}
+                </div>
               </div>
+            </div>
+            <div className="sm:text-right w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-0 border-border/60">
+              <p className="text-xs text-muted-foreground">Số dư khả dụng</p>
+              <p className="text-2xl font-black text-primary tracking-tight">{formatCurrency(profile.balance)}</p>
             </div>
           </CardContent>
         </Card>
+      )}
 
-        {/* Tuition Result Card */}
-        <div className="md:col-span-7">
-          {tuition ? (
-            <Card className="shadow-md border-primary/20">
-              <CardHeader className="pb-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <CardTitle className="text-xl font-bold flex items-center gap-2">
-                      <GraduationCap className="h-5 w-5 text-primary" />
-                      {tuition.student_name}
-                    </CardTitle>
-                    <CardDescription className="font-mono mt-1">MSSV: {tuition.student_id}</CardDescription>
-                  </div>
-                  <Badge variant={tuition.status === 'PAID' ? 'success' : 'destructive'}>
-                    {tuition.status === 'PAID' ? 'ĐÃ ĐÓNG' : 'CHƯA ĐÓNG'}
-                  </Badge>
+      {/* 2. Khung tra cứu học phí */}
+      <Card className="shadow-sm border">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
+            <Search className="h-5 w-5 text-primary" />
+            <span>Tra cứu học phí</span>
+          </CardTitle>
+          <CardDescription>
+            Nhập mã sinh viên để truy xuất thông tin học phí trực tiếp từ hệ thống
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Input
+                id="mssv"
+                type="text"
+                placeholder="Nhập mã sinh viên..."
+                value={mssv}
+                onChange={(e) => setMssv(e.target.value.toUpperCase())}
+                required
+                className="font-mono uppercase placeholder:normal-case h-11"
+              />
+            </div>
+            <Button type="submit" size="lg" className="sm:w-auto h-11 font-medium" disabled={searchLoading || !mssv.trim()}>
+              {searchLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <span>Đang tra cứu...</span>
+                </>
+              ) : (
+                'Tra cứu'
+              )}
+            </Button>
+          </form>
+
+          {error && (
+            <div className="flex items-start gap-2 p-3 text-sm text-red-800 dark:text-red-200 bg-red-50 dark:bg-red-950/40 rounded-lg border border-red-200 dark:border-red-900/50" role="alert">
+              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* 3. Chi tiết hóa đơn học phí & Xác nhận thanh toán */}
+      {tuition ? (
+        <Card className="shadow-sm border">
+          <CardHeader className="pb-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <CardTitle className="text-xl font-bold flex items-center gap-2">
+                  <GraduationCap className="h-5 w-5 text-primary shrink-0" />
+                  <span>{tuition.student_name}</span>
+                </CardTitle>
+                <CardDescription className="font-mono mt-1 text-xs">MSSV: {tuition.student_id}</CardDescription>
+              </div>
+              <Badge variant={tuition.status === 'PAID' ? 'success' : 'destructive'}>
+                {tuition.status === 'PAID' ? 'ĐÃ ĐÓNG' : 'CHƯA ĐÓNG'}
+              </Badge>
+            </div>
+          </CardHeader>
+
+          <CardContent className="space-y-6">
+            <dl className="space-y-3 divide-y divide-border/60 text-sm">
+              <div className="flex items-center justify-between py-2">
+                <dt className="text-muted-foreground">Ngành học</dt>
+                <dd className="font-semibold text-foreground">{tuition.major}</dd>
+              </div>
+              <div className="flex items-center justify-between py-2">
+                <dt className="text-muted-foreground">Học kỳ</dt>
+                <dd className="font-semibold text-foreground">{tuition.semester}</dd>
+              </div>
+              <div className="flex items-baseline justify-between pt-3">
+                <dt className="text-sm font-medium text-foreground">Số tiền học phí</dt>
+                <dd className="text-2xl font-black text-primary tracking-tight">
+                  {formatCurrency(tuition.amount)}
+                </dd>
+              </div>
+            </dl>
+
+            {/* c. Thông tin thanh toán & Thỏa thuận điều khoản */}
+            {tuition.status === 'UNPAID' && (
+              <div className="space-y-4 pt-2 border-t border-border">
+                <div className="space-y-1">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Thông tin thanh toán
+                  </h4>
+                  <p className="text-xs text-muted-foreground">
+                    Hệ thống chỉ cho phép thanh toán toàn bộ khoản học phí, không thực hiện thanh toán một phần.
+                  </p>
                 </div>
-              </CardHeader>
 
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-3 text-sm p-4 bg-muted/40 rounded-xl border">
-                  <div>
-                    <span className="text-xs text-muted-foreground block">Ngành học</span>
-                    <span className="font-medium text-foreground">{tuition.major}</span>
-                  </div>
-                  <div>
-                    <span className="text-xs text-muted-foreground block">Học kỳ</span>
-                    <span className="font-medium text-foreground">{tuition.semester}</span>
-                  </div>
-                </div>
-
-                {/* Chi tiết tài chính thanh toán */}
-                <div className="p-4 rounded-xl border bg-card space-y-2.5">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Số dư khả dụng của bạn:</span>
-                    <span className="font-semibold text-foreground font-mono">
-                      {formatCurrency(profile?.balance || 0)}
+                <div className="rounded-lg bg-muted/40 p-3.5 space-y-2.5 text-sm border">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Số dư khả dụng của người nộp tiền:</span>
+                    <span className="font-bold text-foreground font-mono">
+                      {profile ? formatCurrency(profile.balance) : '---'}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Số tiền cần thanh toán:</span>
-                    <span className="font-black text-primary text-base font-mono">
+                    <span className="font-bold text-primary font-mono text-base">
                       {formatCurrency(tuition.amount)}
                     </span>
                   </div>
-                  {tuition.status === 'UNPAID' && (
-                    <>
-                      <Separator />
-                      <div className="flex items-center justify-between text-xs pt-0.5">
-                        <span className="text-muted-foreground">Số dư ước tính sau thanh toán:</span>
-                        <span className={`font-mono font-semibold ${hasSufficientBalance ? 'text-green-600' : 'text-destructive'}`}>
-                          {formatCurrency(remainingBalance)}
-                        </span>
-                      </div>
-                    </>
+                  {profile && (
+                    <div className="flex items-center justify-between pt-1 border-t border-border/60 text-xs">
+                      <span className="text-muted-foreground">Số dư dự kiến sau giao dịch:</span>
+                      <span className={`font-semibold font-mono ${profile.balance >= tuition.amount ? 'text-emerald-700 dark:text-emerald-400' : 'text-destructive'}`}>
+                        {profile.balance >= tuition.amount ? formatCurrency(profile.balance - tuition.amount) : 'Không đủ số dư'}
+                      </span>
+                    </div>
                   )}
                 </div>
 
-                {/* Cảnh báo nếu số dư không đủ */}
-                {tuition.status === 'UNPAID' && !hasSufficientBalance && profile && (
-                  <div className="flex items-center gap-2.5 p-3 rounded-xl border border-destructive/30 bg-destructive/10 text-destructive text-sm font-semibold">
-                    <AlertCircle className="h-5 w-5 shrink-0" />
-                    <span>Số dư khả dụng không đủ để thanh toán</span>
-                  </div>
-                )}
+                <div className="space-y-3">
+                  <label htmlFor="terms" className="flex items-start gap-2.5 text-xs text-muted-foreground leading-relaxed cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      id="terms"
+                      checked={agreedTerms}
+                      onChange={(e) => setAgreedTerms(e.target.checked)}
+                      disabled={payLoading || (profile && profile.balance < tuition.amount)}
+                      className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer shrink-0"
+                    />
+                    <span>
+                      Tôi xác nhận thông tin sinh viên chính xác và đồng ý với các <strong>thỏa thuận và điều khoản của hệ thống</strong> để thực hiện trích nợ tài khoản thanh toán học phí.
+                    </span>
+                  </label>
 
-                {/* Các thỏa thuận và điều khoản của hệ thống */}
-                {tuition.status === 'UNPAID' && (
-                  <div className="pt-1">
-                    <label className="flex items-start gap-2.5 cursor-pointer p-3 rounded-xl border bg-muted/20 hover:bg-muted/30 transition-colors select-none">
-                      <input
-                        type="checkbox"
-                        id="agree-terms"
-                        checked={agreeTerms}
-                        onChange={(e) => setAgreeTerms(e.target.checked)}
-                        disabled={!hasSufficientBalance}
-                        className="mt-0.5 h-4 w-4 rounded border-input text-primary focus:ring-primary accent-primary cursor-pointer disabled:cursor-not-allowed"
-                      />
-                      <span className="text-xs text-foreground leading-relaxed">
-                        Tôi đồng ý với <strong>các thỏa thuận và điều khoản của hệ thống</strong>.
-                      </span>
-                    </label>
-                  </div>
-                )}
-              </CardContent>
-
-              <CardFooter className="pt-0">
-                {tuition.status === 'UNPAID' ? (
-                  <div className="w-full space-y-2">
-                    <Button
-                      onClick={handleInitiate}
-                      disabled={!isPayable}
-                      className="w-full gap-2 text-base py-5"
-                      size="lg"
-                    >
-                      {payLoading ? (
-                        <>
-                          <Loader2 className="h-5 w-5 animate-spin" />
-                          Đang khởi tạo giao dịch...
-                        </>
-                      ) : (
-                        <>
-                          <CreditCard className="h-5 w-5" />
-                          Xác nhận giao dịch ({formatCurrency(tuition.amount)})
-                        </>
-                      )}
-                    </Button>
-
-                    {!isPayable && (
-                      <p className="text-center text-xs text-muted-foreground">
-                        {!hasSufficientBalance
-                          ? '⚠️ Nút bị khóa do số dư khả dụng không đủ để thanh toán.'
-                          : !agreeTerms
-                          ? '⚠️ Vui lòng tích chọn đồng ý với điều khoản để kích hoạt nút xác nhận.'
-                          : ''}
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="w-full text-center text-sm text-green-600 font-medium py-2">
-                    Khoản học phí này đã được gạch nợ thành công.
-                  </div>
-                )}
-              </CardFooter>
-            </Card>
-          ) : (
-            <Card className="border-dashed shadow-none text-center p-8 bg-muted/10">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground mb-3">
-                <UserCheck className="h-6 w-6" />
+                  {profile && profile.balance < tuition.amount && (
+                    <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-200 text-xs font-medium border border-red-200 dark:border-red-900/50" role="alert">
+                      <AlertCircle className="h-4 w-4 shrink-0" />
+                      <span>Số dư khả dụng không đủ để thực hiện giao dịch (Cần tối thiểu {formatCurrency(tuition.amount)}).</span>
+                    </div>
+                  )}
+                </div>
               </div>
-              <h3 className="font-semibold text-foreground">Chưa có thông tin tra cứu</h3>
-              <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
-                Nhập MSSV vào biểu mẫu bên trái và nhấn &quot;Tra cứu ngay&quot; để hiển thị chi tiết hóa đơn học phí.
-              </p>
-            </Card>
-          )}
-        </div>
-      </div>
+            )}
+          </CardContent>
 
+          <CardFooter className="pt-0">
+            {tuition.status === 'UNPAID' ? (
+              <Button
+                onClick={handleInitiate}
+                disabled={payLoading || !agreedTerms || !profile || (profile.balance < tuition.amount)}
+                className="w-full gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium h-11 text-base shadow-sm"
+                size="lg"
+              >
+                {payLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Đang xử lý...</span>
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="h-5 w-5" />
+                    <span>Xác nhận giao dịch</span>
+                  </>
+                )}
+              </Button>
+            ) : (
+              <div className="w-full flex items-center justify-center gap-2 text-sm font-semibold text-emerald-800 dark:text-emerald-300 py-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
+                <span>Hóa đơn học phí đã được gạch nợ thành công</span>
+              </div>
+            )}
+          </CardFooter>
+        </Card>
+      ) : (
+        <Card className="border-dashed shadow-none text-center p-8 bg-card">
+          <UserCheck className="mx-auto h-8 w-8 text-muted-foreground/50 mb-2" />
+          <h3 className="font-semibold text-foreground">Chưa có dữ liệu</h3>
+          <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
+            Nhập mã sinh viên để tra cứu hóa đơn học phí.
+          </p>
+        </Card>
+      )}
 
       {showOtp && (
         <OtpModal
           open={showOtp}
           onConfirm={handleConfirm}
-          onCancel={() => setShowOtp(false)}
+          onCancel={() => {
+            setShowOtp(false)
+            setOtpError('')
+          }}
           loading={payLoading}
+          error={otpError}
+          onClearError={() => setOtpError('')}
         />
       )}
 

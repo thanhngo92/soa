@@ -54,4 +54,4 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # ── Docker Data & Local Volumes ───────────────────────────────────────────────
-mongo_data/
+mysql_data/

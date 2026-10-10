@@ -10,9 +10,9 @@
 
 | Thành Viên | Dịch Vụ Phụ Trách | Database | Tài Liệu Hướng Dẫn Chi Tiết | Trách Nhiệm Chính |
 |:---|:---|:---|:---|:---|
-| **Member 1** | **`account-service`** | `account_db` | [account-service/README.md](file:///d:/TDTU/KTHDV/GK/soa/backend/account-service/README.md) | Quản lý tài khoản, Bcrypt, JWT auth, `/me`, Trừ tiền atomic, Hoàn tiền refund, Seed dữ liệu tài khoản. |
-| **Member 2** | **`tuition-service`**<br>**`notification-service`** | `tuition_db`<br>`notification_db` | [tuition-service/README.md](file:///d:/TDTU/KTHDV/GK/soa/backend/tuition-service/README.md)<br>[notification-service/README.md](file:///d:/TDTU/KTHDV/GK/soa/backend/notification-service/README.md) | Tra cứu học phí theo MSSV, Gạch nợ atomic, Sinh mã OTP 6 số (TTL 5 phút), Xác thực OTP chống Replay, Gửi email qua Mailpit. |
-| **Member 3** | **`payment-service`**<br>`api-gateway`<br>`frontend` | `payment_db` | [payment-service/README.md](file:///d:/TDTU/KTHDV/GK/soa/backend/payment-service/README.md)<br>[api-gateway/README.md](file:///d:/TDTU/KTHDV/GK/soa/api-gateway/README.md)<br>[frontend/README.md](file:///d:/TDTU/KTHDV/GK/soa/frontend/README.md) | Điều phối Saga Orchestrator (Initiate, Confirm, Bù trừ Refund), Định tuyến Gateway, Tích hợp giao diện Frontend, E2E Testing. |
+| **Member 1** | **`account-service`** | `account_db` | [account-service/README.md](./account-service/README.md) | Quản lý tài khoản, Bcrypt, JWT auth, `/me`, Trừ tiền atomic, Hoàn tiền refund, Seed dữ liệu tài khoản. |
+| **Member 2** | **`tuition-service`**<br>**`notification-service`** | `tuition_db`<br>`notification_db` | [tuition-service/README.md](./tuition-service/README.md)<br>[notification-service/README.md](./notification-service/README.md) | Tra cứu học phí theo MSSV, Gạch nợ atomic, Sinh mã OTP 6 số (TTL 5 phút), Xác thực OTP chống Replay, Gửi email qua Mailpit. |
+| **Member 3** | **`payment-service`**<br>`api-gateway`<br>`frontend` | `payment_db` | [payment-service/README.md](./payment-service/README.md)<br>[api-gateway/README.md](../api-gateway/README.md)<br>[frontend/README.md](../frontend/README.md) | Điều phối Saga Orchestrator (Initiate, Confirm, Bù trừ Refund), Định tuyến Gateway, Tích hợp giao diện Frontend, E2E Testing. |
 
 ---
 
@@ -49,6 +49,8 @@ backend/{service-name}/
 ├── requirements.txt             # Danh sách dependencies
 ├── .env.example                 # Mẫu biến môi trường
 ├── README.md                    # Tài liệu chi tiết của service
+├── db/                          # Quản lý CSDL riêng của service (Database-per-Service)
+│   └── init.sql                 # Script DDL schema, constraints, seed data
 │
 └── app/
     ├── main.py                  # Entrypoint, lifespan (khởi tạo DB pool / HTTP client), route

@@ -52,8 +52,7 @@ backend/account-service/
     │   └── account_repository.py# Thao tác SQL với MySQL (Atomic UPDATE, SELECT)
     │
     ├── schemas/
-    │   ├── account_schema.py    # Pydantic DTO (LoginRequest, DeductRequest, RefundRequest,...)
-    │   └── account_document.py  # Mô tả cấu trúc bảng accounts
+    │   └── account_schema.py    # Pydantic DTO (LoginRequest, DeductRequest, RefundRequest,...)
     │
     └── utils/
         ├── response_util.py     # Chuẩn hóa JSON: {"success": true, "data": ...}
@@ -88,9 +87,9 @@ CREATE TABLE IF NOT EXISTS accounts (
 Dữ liệu đã được nạp sẵn qua `init-db/init-mysql.sql`:
 | ID | Username | Password gốc | Full Name | Email | Số dư (VND) |
 |:---|:---|:---|:---|:---|:---|
-| `1` | `sv.nguyen` | `Test@123` | Nguyen Van An | `nguyen.van.an@student.tdtu.edu.vn` | **7,500,000** |
-| `2` | `sv.tran` | `Test@123` | Tran Thi Bao | `tran.thi.bao@student.tdtu.edu.vn` | **2,300,000** |
-| `3` | `sv.le` | `Ibank@456` | Le Hoang Cuong | `le.hoang.cuong@student.tdtu.edu.vn` | **12,000,000** |
+| `1` | `user01` | `Test@123` | Nguyen Van An | `nguyen.van.an@student.tdtu.edu.vn` | **7,500,000** |
+| `2` | `user02` | `Test@123` | Tran Thi Bao | `tran.thi.bao@student.tdtu.edu.vn` | **2,300,000** |
+| `3` | `user03` | `Test@123` | Le Hoang Cuong | `le.hoang.cuong@student.tdtu.edu.vn` | **12,000,000** |
 
 > *Ghi chú băm Bcrypt mẫu:* `Test@123` $\rightarrow$ `$2b$12$kEJGg8fVLyvUhWg2zsBY1ejZ.KFf1oRRPgrbTgOJmwUye9/50vcUi`
 
@@ -110,7 +109,7 @@ Tất cả response đều tuân theo định dạng chuẩn:
 * **Request Body:**
 ```json
 {
-  "username": "sv.nguyen",
+  "username": "user01",
   "password": "Test@123"
 }
 ```
@@ -128,7 +127,7 @@ Tất cả response đều tuân theo định dạng chuẩn:
 ```json
 {
   "sub": "1",
-  "username": "sv.nguyen",
+  "username": "user01",
   "email": "nguyen.van.an@student.tdtu.edu.vn",
   "exp": 1759240000
 }
@@ -155,7 +154,7 @@ Tất cả response đều tuân theo định dạng chuẩn:
   "success": true,
   "data": {
     "id": "1",
-    "username": "sv.nguyen",
+    "username": "user01",
     "full_name": "Nguyen Van An",
     "email": "nguyen.van.an@student.tdtu.edu.vn",
     "phone": "0901234567",
@@ -285,7 +284,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8661 --reload
 ```bash
 curl -X POST http://localhost:8661/api/accounts/login \
   -H "Content-Type: application/json" \
-  -d "{\"username\": \"sv.nguyen\", \"password\": \"Test@123\"}"
+  -d "{\"username\": \"user01\", \"password\": \"Test@123\"}"
 ```
 
 #### 2. Lấy Profile & Số dư:

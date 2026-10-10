@@ -18,6 +18,8 @@ async def connect_db(retries: int = 15, delay: int = 2) -> None:
                 autocommit=True,
                 minsize=2,
                 maxsize=10,
+                pool_recycle=3600,
+                connect_timeout=10,
                 charset="utf8mb4",
             )
             return

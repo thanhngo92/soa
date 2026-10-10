@@ -46,35 +46,33 @@ export default function HistoryPage() {
 
   return (
     <div className="container mx-auto max-w-4xl py-8 px-4 sm:px-6 space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-          <History className="h-5 w-5" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Lịch sử giao dịch</h1>
-          <p className="text-sm text-muted-foreground">Tất cả các giao dịch thanh toán học phí của tài khoản</p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+          <History className="h-6 w-6 text-primary shrink-0" />
+          <span>Lịch sử giao dịch</span>
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1">Danh sách tất cả các giao dịch thanh toán học phí đã thực hiện</p>
       </div>
 
       {loading && (
         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-2">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm">Đang tải lịch sử giao dịch...</p>
+          <p className="text-sm font-medium">Đang tải lịch sử...</p>
         </div>
       )}
 
       {error && (
-        <div className="p-4 rounded-xl border border-destructive/20 bg-destructive/10 text-destructive text-sm">
+        <div className="p-4 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-200 text-sm" role="alert">
           {error}
         </div>
       )}
 
       {!loading && !error && records.length === 0 && (
-        <Card className="border-dashed text-center p-12 bg-muted/10">
-          <CreditCard className="mx-auto h-12 w-12 text-muted-foreground mb-3" />
-          <h3 className="font-semibold text-foreground">Chưa có giao dịch nào</h3>
+        <Card className="border-dashed text-center p-12 bg-card">
+          <CreditCard className="mx-auto h-8 w-8 text-muted-foreground/50 mb-2" />
+          <h3 className="font-semibold text-foreground">Chưa có giao dịch</h3>
           <p className="text-sm text-muted-foreground mt-1">
-            Bạn chưa thực hiện thanh toán học phí nào từ tài khoản này.
+            Tài khoản chưa có lịch sử phát sinh giao dịch nào.
           </p>
         </Card>
       )}
@@ -82,26 +80,26 @@ export default function HistoryPage() {
       {!loading && !error && records.length > 0 && (
         <div className="space-y-3">
           {records.map((r) => (
-            <Card key={r.payment_id} className="hover:border-primary/40 transition-colors shadow-sm">
+            <Card key={r.payment_id} className="hover:border-primary/40 transition-colors shadow-sm border">
               <CardContent className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-bold text-base text-foreground">{r.student_name}</span>
-                    <span className="text-xs px-2 py-0.5 rounded bg-muted font-mono font-medium text-muted-foreground">
+                    <Badge variant="outline" className="font-mono text-xs">
                       MSSV: {r.student_id}
-                    </span>
+                    </Badge>
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
                     <span className="flex items-center gap-1">
-                      <Calendar className="h-3.5 w-3.5" />
+                      <Calendar className="h-3.5 w-3.5 text-muted-foreground/70" />
                       {formatDate(r.created_at)}
                     </span>
-                    <span className="font-mono">Mã GD: {r.payment_id.slice(-8).toUpperCase()}</span>
+                    <span className="font-mono">Mã GD: #{r.payment_id}</span>
                   </div>
                 </div>
 
-                <div className="flex items-center sm:flex-col sm:items-end justify-between w-full sm:w-auto gap-1">
-                  <span className="text-lg font-bold text-primary">
+                <div className="flex items-center sm:flex-col sm:items-end justify-between w-full sm:w-auto gap-2">
+                  <span className="text-lg font-bold text-primary tracking-tight">
                     {formatCurrency(r.amount)}
                   </span>
                   <div>{getStatusBadge(r.status)}</div>

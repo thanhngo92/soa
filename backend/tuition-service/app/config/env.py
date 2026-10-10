@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     
     JWT_SECRET: str = "change_me_to_a_secure_secret"
     JWT_EXPIRE_MINUTES: int = 60
+    INTERNAL_SERVICE_KEY: str = "super_internal_service_secret_key_2026"
 
     class Config:
         env_file = ".env"

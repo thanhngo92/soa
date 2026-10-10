@@ -2,26 +2,32 @@ import { createContext, useContext, useState, useCallback } from 'react'
 
 const AuthContext = createContext(null)
 
+function safeDecodeJwt(t) {
+  if (!t || typeof t !== 'string') return null
+  try {
+    const parts = t.split('.')
+    if (parts.length < 2) return null
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const decodedStr = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    )
+    return JSON.parse(decodedStr)
+  } catch {
+    return null
+  }
+}
+
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('token'))
-  const [user, setUser]   = useState(() => {
-    try {
-      const t = localStorage.getItem('token')
-      if (!t) return null
-      return JSON.parse(atob(t.split('.')[1]))   // decode JWT payload
-    } catch {
-      return null
-    }
-  })
+  const [user, setUser]   = useState(() => safeDecodeJwt(localStorage.getItem('token')))
 
   const login = useCallback((accessToken) => {
     localStorage.setItem('token', accessToken)
     setToken(accessToken)
-    try {
-      setUser(JSON.parse(atob(accessToken.split('.')[1])))
-    } catch {
-      setUser(null)
-    }
+    setUser(safeDecodeJwt(accessToken))
   }, [])
 
   const logout = useCallback(() => {

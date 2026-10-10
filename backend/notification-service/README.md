@@ -51,8 +51,7 @@ backend/notification-service/
     │   └── notification_repository.py# Thao tác SQL (INSERT OTP, Atomic Verify UPDATE)
     │
     ├── schemas/
-    │   ├── notification_schema.py   # DTO: GenerateOtpRequest, VerifyOtpRequest,...
-    │   └── notification_document.py # Mô tả cấu trúc bảng otps
+    │   └── notification_schema.py   # DTO: GenerateOtpRequest, VerifyOtpRequest,...
     │
     └── utils/
         ├── response_util.py     # Chuẩn hóa JSON response

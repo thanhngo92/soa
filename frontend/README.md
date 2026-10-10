@@ -89,9 +89,9 @@ frontend/
 ### 4.1 Tài khoản Đăng nhập:
 | Username | Password | Tên sinh viên | Số dư khả dụng |
 |:---|:---|:---|:---|
-| `sv.nguyen` | `Test@123` | Nguyen Van An | **7,500,000 VND** |
-| `sv.tran` | `Test@123` | Tran Thi Bao | **2,300,000 VND** |
-| `sv.le` | `Ibank@456` | Le Hoang Cuong | **12,000,000 VND** |
+| `user01` | `Test@123` | Nguyen Van An | **7,500,000 VND** |
+| `user02` | `Test@123` | Tran Thi Bao | **2,300,000 VND** |
+| `user03` | `Test@123` | Le Hoang Cuong | **12,000,000 VND** |
 
 ### 4.2 Mã Số Sinh Viên (MSSV) cần tra cứu học phí:
 * `521H0001` (4,850,000 VND - `UNPAID`)

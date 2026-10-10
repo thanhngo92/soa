@@ -1,7 +1,7 @@
 import httpx
 from fastapi import Request, Response
 
-STRIP_HEADERS = {"host", "content-length", "transfer-encoding", "connection"}
+STRIP_HEADERS = {"host", "content-length", "transfer-encoding", "connection", "x-service-role", "x-internal-token"}
 
 
 async def forward_request(http_client: httpx.AsyncClient, target_url: str, request: Request) -> Response:
