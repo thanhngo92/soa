@@ -45,7 +45,7 @@ flowchart LR
     user --- uc_history
 
     %% Quan hệ Include giữa các Use Case
-    uc_pay -.->|"<<include>>"| uc_otp
+    uc_pay -.->|&lt;&lt;include&gt;&gt;| uc_otp
 
     %% Tương tác với Hệ thống ngoài (External Services)
     uc_query --- tuition
