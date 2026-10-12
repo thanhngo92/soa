@@ -4,7 +4,7 @@
 > **Người phụ trách:** **Member 3** (Payment Service + API Gateway + Frontend Integration)  
 > **Công nghệ:** Python 3.11+ • FastAPI • HTTPX Reverse Proxy Engine  
 > **Port:** `8877` (Public Ingress)  
-> **Frontend Origin (CORS):** `http://localhost:3659`
+> **Frontend Origin (CORS):** `http://localhost:3000`
 
 ---
 
@@ -12,7 +12,7 @@
 
 API Gateway là **Cổng vào tập trung duy nhất (Single Entry Point)** cho toàn bộ hệ thống iBanking SOA:
 1. **Định tuyến ngược (Reverse Proxy Routing)**: Nhận toàn bộ request từ Frontend và định tuyến đến đúng Microservice tương ứng.
-2. **Cấu hình CORS tập trung**: Cho phép Frontend tại `http://localhost:3659` gửi request, xử lý Preflight `OPTIONS`.
+2. **Cấu hình CORS tập trung**: Cho phép Frontend tại `http://localhost:3000` gửi request, xử lý Preflight `OPTIONS`.
 3. **Bảo toàn Header & Token**: Giữ nguyên header xác thực `Authorization: Bearer <JWT>`, `Content-Type`,... khi chuyển tiếp xuống backend.
 4. **Kiểm soát tính bất biến (Idempotency Engine)**: Đọc Header `Idempotency-Key` trên các request thay đổi dữ liệu (`POST`, `PUT`,...), cache response (TTL 5 phút) để trả về ngay kết quả cho client nếu bị gọi lặp lại do rớt mạng hoặc người dùng click đúp.
 5. **Workflow Guard**: Chặn từ chối các request bên ngoài gọi tắt vào các endpoint nội bộ nhạy cảm.
@@ -67,7 +67,7 @@ TUITION_SERVICE_URL=http://localhost:8732
 PAYMENT_SERVICE_URL=http://localhost:8815
 NOTIFICATION_SERVICE_URL=http://localhost:8940
 
-ALLOWED_ORIGINS=http://localhost:3659,http://127.0.0.1:3659
+ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 ```
 
 ---
@@ -111,6 +111,6 @@ curl -X GET http://localhost:8877/api/tuitions/students/521H0001
 - [ ] Định tuyến chính xác `/api/tuitions/*` tới Tuition Service (:8732).
 - [ ] Định tuyến chính xác `/api/payments/*` tới Payment Service (:8815).
 - [ ] Định tuyến chính xác `/api/notifications/*` tới Notification Service (:8940).
-- [ ] Xử lý CORS thành công cho Frontend Origin `http://localhost:3659`.
+- [ ] Xử lý CORS thành công cho Frontend Origin `http://localhost:3000`.
 - [ ] Giữ nguyên Header `Authorization: Bearer ...` khi forward request.
 - [ ] Trả về JSON chuẩn khi service con không phản hồi (`502` / `504`).

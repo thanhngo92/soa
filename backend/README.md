@@ -19,7 +19,7 @@
 ## 2. Bảng Danh Mục Service & Network Ports
 
 ```text
-Frontend :3659
+Frontend :3000
    │
    ▼
 API Gateway :8877

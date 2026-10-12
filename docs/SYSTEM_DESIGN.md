@@ -192,7 +192,7 @@ Mỗi microservice sở hữu một tập tin khởi tạo DDL cô lập đặt 
 
 ```mermaid
 flowchart TD
-    client["💻 Web Client (React 18 + Vite :3659)"] -->|HTTP / REST| gw["🌐 API Gateway (FastAPI :8877)"]
+    client["💻 Web Client (React 18 + Vite :3000)"] -->|HTTP / REST| gw["🌐 API Gateway (FastAPI :8877)"]
 
     subgraph internal_network ["Docker Bridge Network (soa-net)"]
         direction TB

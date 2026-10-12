@@ -3,7 +3,7 @@
 > **Dự án:** iBanking Tuition Payment System (SOA)  
 > **Người phụ trách:** **Member 3** (Payment Service + API Gateway + Frontend Integration)  
 > **Công nghệ:** React 18 • Vite • Tailwind CSS • Shadcn UI • Axios • Lucide React  
-> **Port:** `3659`  
+> **Port:** `3000`  
 > **API Gateway Base URL:** `http://localhost:8877/api`
 
 ---
@@ -37,7 +37,7 @@ page ──> component ──> utils ──> hooks ──> context ──> servi
 ```text
 frontend/
 ├── index.html
-├── vite.config.js               # Dev server port 3659, cấu hình alias '@' -> '/src'
+├── vite.config.js               # Dev server port 3000, cấu hình alias '@' -> '/src'
 ├── package.json
 ├── tailwind.config.js           # Theme, bảng màu, animation
 ├── postcss.config.js
@@ -110,11 +110,11 @@ cd frontend
 # 2. Cài đặt các gói thư viện
 npm install
 
-# 3. Khởi chạy Vite Dev Server (Port 3659)
+# 3. Khởi chạy Vite Dev Server (Port 3000)
 npm run dev
 ```
 
-* Mở trình duyệt truy cập: **[http://localhost:3659](http://localhost:3659)**
+* Mở trình duyệt truy cập: **[http://localhost:3000](http://localhost:3000)**
 * Xem mã OTP nhận được tại Web Mailpit: **[http://localhost:8025](http://localhost:8025)**
 
 ---

@@ -11,7 +11,7 @@
 |:---|:---|:---|:---|
 | **Member 1** | **`account-service`** (Port `8661`) | `account_db` | 📖 [Tài liệu chi tiết Account Service](./backend/account-service/README.md) |
 | **Member 2** | **`tuition-service`** (Port `8732`)<br>**`notification-service`** (Port `8940`) | `tuition_db`<br>`notification_db` | 📖 [Tài liệu chi tiết Tuition Service](./backend/tuition-service/README.md)<br>📖 [Tài liệu chi tiết Notification Service](./backend/notification-service/README.md) |
-| **Member 3** | **`payment-service`** (Port `8815`)<br>**`api-gateway`** (Port `8877`)<br>**`frontend`** (Port `3659`) | `payment_db` | 📖 [Tài liệu chi tiết Payment Service](./backend/payment-service/README.md)<br>📖 [Tài liệu chi tiết API Gateway](./api-gateway/README.md)<br>📖 [Tài liệu chi tiết Frontend](./frontend/README.md) |
+| **Member 3** | **`payment-service`** (Port `8815`)<br>**`api-gateway`** (Port `8877`)<br>**`frontend`** (Port `3000`) | `payment_db` | 📖 [Tài liệu chi tiết Payment Service](./backend/payment-service/README.md)<br>📖 [Tài liệu chi tiết API Gateway](./api-gateway/README.md)<br>📖 [Tài liệu chi tiết Frontend](./frontend/README.md) |
 
 📘 **Xem toàn bộ phân tích UML & Thiết kế hệ thống tại:** [**`docs/SYSTEM_DESIGN.md`**](./docs/SYSTEM_DESIGN.md)
 
@@ -114,7 +114,7 @@ erDiagram
 
 ```mermaid
 flowchart LR
-    frontend["frontend (:3659)\nReact 18 + Vite"] --> api-gateway["api-gateway (:8877)\nFastAPI Reverse Proxy"]
+    frontend["frontend (:3000)\nReact 18 + Vite"] --> api-gateway["api-gateway (:8877)\nFastAPI Reverse Proxy"]
 
     subgraph services ["Microservices Backend (Docker Bridge Network: soa-net)"]
         direction TB
@@ -159,7 +159,7 @@ flowchart LR
 
 | Thành Phần | Công Nghệ | Port Công Khai | Vai Trò & Trách Nhiệm |
 |:---|:---|:---|:---|
-| **`frontend`** | React 18 + Vite + Tailwind + Shadcn UI | `3659` | Giao diện người dùng iBanking (Tra cứu, OTP, Hoá đơn, Lịch sử) |
+| **`frontend`** | React 18 + Vite + Tailwind + Shadcn UI | `3000` | Giao diện người dùng iBanking (Tra cứu, OTP, Hoá đơn, Lịch sử) |
 | **`api-gateway`** | FastAPI + HTTPX Reverse Proxy | `8877` | Cổng vào duy nhất, định tuyến, CORS, mapping lỗi mạng |
 | **`account-service`** | Python 3.11 + FastAPI + Bcrypt | `8661` | Quản lý tài khoản, Bcrypt, JWT auth, trừ tiền/hoàn tiền atomic |
 | **`tuition-service`** | Python 3.11 + FastAPI + aiomysql | `8732` | Quản lý sổ nợ học phí sinh viên, gạch nợ atomic |
@@ -224,7 +224,7 @@ docker compose up --build -d
 ```
 
 ### Các đường dẫn truy cập:
-* 🌐 **Giao diện Web Frontend:** [http://localhost:3659](http://localhost:3659)
+* 🌐 **Giao diện Web Frontend:** [http://localhost:3000](http://localhost:3000)
 * 🚪 **API Gateway Health Check:** [http://localhost:8877/health](http://localhost:8877/health)
 * 📧 **Hộp thư Mailpit Web UI (Xem mã OTP & Biên nhận):** [http://localhost:8025](http://localhost:8025)
 
