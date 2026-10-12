@@ -102,7 +102,7 @@ async def test_scenario_0_workflow_guard(client: httpx.AsyncClient) -> bool:
     log_info("Mục tiêu: Đảm bảo Client bên ngoài không thể gọi trực tiếp các thao tác nội bộ")
     log_info("(Ví dụ: gạch nợ học phí, hoàn tiền tài khoản, tạo OTP trực tiếp qua Gateway)")
 
-    token = await login(client, "user02", "Test@123")
+    token = await login(client, "sv.tran", "Test@123")
     passed = True
 
     # 1. Thử gọi trực tiếp /api/tuitions/pay
@@ -164,10 +164,10 @@ async def test_scenario_0_workflow_guard(client: httpx.AsyncClient) -> bool:
 # ─────────────────────────────────────────────────────────────────────────────
 async def test_scenario_1_overdraw(client: httpx.AsyncClient):
     log_header("KỊCH BẢN 1: NHIỀU GIAO DỊCH ĐỒNG THỜI TRÊN CÙNG MỘT TÀI KHOẢN")
-    log_info("Tài khoản: 'user02' | Số dư ban đầu: 2,300,000 VND")
+    log_info("Tài khoản: 'sv.tran' | Số dư ban đầu: 2,300,000 VND")
     log_info("Mục tiêu: Bắn 2 yêu cầu trừ 1,500,000 VND ĐỒNG THỜI (Tổng cần 3,000,000 VND > 2,300,000 VND)")
 
-    token = await login(client, "user02", "Test@123")
+    token = await login(client, "sv.tran", "Test@123")
     initial_profile = await get_profile(client, token)
     initial_balance = initial_profile["balance"]
     log_info(f"Số dư thực tế trước khi test: {initial_balance:,.0f} VND")
@@ -227,7 +227,7 @@ async def test_scenario_1_overdraw(client: httpx.AsyncClient):
         headers={"Authorization": f"Bearer {token}", "X-Internal-Token": INTERNAL_SERVICE_KEY},
         json={"amount": deduct_amount, "transaction_id": f"CLEANUP_{time.time_ns()}"},
     )
-    log_info(f"Đã hoàn trả 1,500,000 VND về tài khoản user02 để reset dữ liệu.\n")
+    log_info(f"Đã hoàn trả 1,500,000 VND về tài khoản sv.tran để reset dữ liệu.\n")
     return passed
 
 
@@ -247,8 +247,8 @@ async def test_scenario_2_double_payment(client: httpx.AsyncClient):
     )
 
     # Đăng nhập 2 tài khoản khác nhau
-    token_1 = await login(client, "user01", "Test@123")  # Dư 7.5tr
-    token_2 = await login(client, "user03", "Test@123")  # Dư 12tr
+    token_1 = await login(client, "sv.nguyen", "Test@123")  # Dư 7.5tr
+    token_2 = await login(client, "sv.le", "Test@123")  # Dư 12tr
 
     p1_before = await get_profile(client, token_1)
     p2_before = await get_profile(client, token_2)
@@ -264,8 +264,8 @@ async def test_scenario_2_double_payment(client: httpx.AsyncClient):
         await client.post(f"{ACCOUNT_URL}/api/accounts/refund", headers={"Authorization": f"Bearer {token_2}", "X-Internal-Token": INTERNAL_SERVICE_KEY}, json={"amount": diff, "transaction_id": f"PRETEST_RESET_{time.time_ns()}"})
         p2_before = await get_profile(client, token_2)
 
-    log_info(f"Tài khoản 1 (user01) số dư ban đầu: {p1_before['balance']:,.0f} VND")
-    log_info(f"Tài khoản 2 (user03) số dư ban đầu: {p2_before['balance']:,.0f} VND")
+    log_info(f"Tài khoản 1 (sv.nguyen) số dư ban đầu: {p1_before['balance']:,.0f} VND")
+    log_info(f"Tài khoản 2 (sv.le) số dư ban đầu: {p2_before['balance']:,.0f} VND")
 
     # Bước 1: Cả 2 cùng initiate giao dịch
     log_info("Cả 2 tài khoản đồng thời gọi POST /api/payments/initiate...")
@@ -307,8 +307,8 @@ async def test_scenario_2_double_payment(client: httpx.AsyncClient):
         return user_label, resp.status_code, resp.json(), t_elapsed
 
     results = await asyncio.gather(
-        confirm_payment("user01", token_1, payment_id_1, otp_1),
-        confirm_payment("user03", token_2, payment_id_2, otp_2),
+        confirm_payment("sv.nguyen", token_1, payment_id_1, otp_1),
+        confirm_payment("sv.le", token_2, payment_id_2, otp_2),
     )
 
     success_user = None
@@ -331,8 +331,8 @@ async def test_scenario_2_double_payment(client: httpx.AsyncClient):
     tuition_check = (await client.get(f"{GATEWAY_URL}/api/tuitions/students/{student_id}")).json()["data"]
 
     log_info(f"Trạng thái học phí MSSV {student_id}: {BOLD}{tuition_check['status']}{RESET}")
-    log_info(f"Tài khoản 1 (user01) số dư sau: {p1_after['balance']:,.0f} VND")
-    log_info(f"Tài khoản 2 (user03) số dư sau: {p2_after['balance']:,.0f} VND")
+    log_info(f"Tài khoản 1 (sv.nguyen) số dư sau: {p1_after['balance']:,.0f} VND")
+    log_info(f"Tài khoản 2 (sv.le) số dư sau: {p2_after['balance']:,.0f} VND")
 
     passed = True
     # Kiểm tra chỉ 1 bên thành công
@@ -343,8 +343,8 @@ async def test_scenario_2_double_payment(client: httpx.AsyncClient):
         passed = False
 
     # Kiểm tra Saga Compensation: Người bị từ chối không bị mất tiền
-    expected_failed_balance = p1_before["balance"] if failed_user == "user01" else p2_before["balance"]
-    actual_failed_balance = p1_after["balance"] if failed_user == "user01" else p2_after["balance"]
+    expected_failed_balance = p1_before["balance"] if failed_user == "sv.nguyen" else p2_before["balance"]
+    actual_failed_balance = p1_after["balance"] if failed_user == "sv.nguyen" else p2_after["balance"]
 
     if actual_failed_balance == expected_failed_balance:
         log_pass(f"Cơ chế bù trừ Saga hoạt động hoàn hảo: Người bị từ chối [{failed_user}] đã được tự động hoàn tiền ({actual_failed_balance:,.0f} VND), không bị trừ xu nào!")
@@ -354,13 +354,13 @@ async def test_scenario_2_double_payment(client: httpx.AsyncClient):
 
     # Dọn dẹp dữ liệu sau test để kịch bản có thể chạy lặp lại nhiều lần
     log_info("Dọn dẹp môi trường test (hoàn tiền người thanh toán và revert học phí về UNPAID)...")
-    if success_user == "user01":
+    if success_user == "sv.nguyen":
         await client.post(
             f"{ACCOUNT_URL}/api/accounts/refund",
             headers={"Authorization": f"Bearer {token_1}", "X-Internal-Token": INTERNAL_SERVICE_KEY},
             json={"amount": 4_720_000.0, "transaction_id": f"CLEANUP_{time.time_ns()}"},
         )
-    elif success_user == "user03":
+    elif success_user == "sv.le":
         await client.post(
             f"{ACCOUNT_URL}/api/accounts/refund",
             headers={"Authorization": f"Bearer {token_2}", "X-Internal-Token": INTERNAL_SERVICE_KEY},
@@ -387,7 +387,7 @@ async def test_scenario_3_idempotency_key(client: httpx.AsyncClient) -> bool:
     log_info("  - Lần 2: Gateway chặn từ ngoài và trả về response cache (X-Idempotent-Replay: true, X-Cache-Lookup: HIT).")
     log_info("  - Số dư tài khoản chỉ bị trừ ĐÚNG 1 LẦN, không bị trừ đúp.\n")
 
-    token = await login(client, "user03")  # Le Hoang Cuong (12,000,000 VND)
+    token = await login(client, "sv.le")  # Le Hoang Cuong (12,000,000 VND)
     profile_before = await get_profile(client, token)
     student_id = "522H0041"  # Hoang Thi Yen (3,280,000 VND)
 

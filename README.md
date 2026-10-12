@@ -200,7 +200,7 @@ flowchart LR
 |:---|:---|:---|:---|
 | `sv.nguyen` | `Test@123` | Nguyen Van An | **7,500,000 VND** |
 | `sv.tran` | `Test@123` | Tran Thi Bao | **2,300,000 VND** |
-| `sv.le` | `Ibank@456` | Le Hoang Cuong | **12,000,000 VND** |
+| `sv.le` | `Test@123` | Le Hoang Cuong | **12,000,000 VND** |
 
 ### Mã Sinh Viên nợ học phí:
 | MSSV | Họ và Tên | Ngành | Học Kỳ | Học Phí | Trạng Thái |

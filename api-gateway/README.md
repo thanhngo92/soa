@@ -95,7 +95,7 @@ curl -X GET http://localhost:8877/health
 ```bash
 curl -X POST http://localhost:8877/api/accounts/login \
   -H "Content-Type: application/json" \
-  -d "{\"username\": \"user01\", \"password\": \"Test@123\"}"
+  -d "{\"username\": \"sv.nguyen\", \"password\": \"Test@123\"}"
 ```
 
 #### 3. Test Proxy đến Tuition Service:
