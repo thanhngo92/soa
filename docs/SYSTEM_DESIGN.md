@@ -10,52 +10,55 @@
 
 ## 1. Biểu Đồ Ca Sử Dụng (Use Case Diagram)
 
-Hệ thống có các Actor chính:
-* **Người dùng iBanking (Payer / Student):** Đăng nhập, tra cứu học phí, thực hiện thanh toán, nhập OTP, xem lịch sử giao dịch.
-* **Hệ thống Quản lý Học Phí (Tuition System):** Cung cấp dữ liệu học phí sinh viên và xác nhận gạch nợ.
-* **Hệ thống Email (Mock SMTP / Mailpit):** Tiếp nhận gửi OTP và email biên nhận giao dịch thành công.
+### 1.1 Danh sách Tác nhân (Actors)
+* **iBanking User / Customer (Tác nhân chính):** Người dùng dịch vụ ngân hàng trực tuyến (sinh viên hoặc phụ huynh) thực hiện các thao tác đăng nhập, tra cứu học phí, thực hiện thanh toán, nhập mã OTP xác thực và theo dõi lịch sử giao dịch.
+* **Tuition Management System (Hệ thống quản lý học phí):** Hệ thống dịch vụ phụ trợ cung cấp thông tin công nợ học phí theo MSSV và tiếp nhận lệnh gạch nợ học phí sau khi thanh toán thành công.
+* **Email Notification Service (Dịch vụ thông báo Email):** Hệ thống dịch vụ phụ trợ tiếp nhận yêu cầu gửi mã xác thực 2FA OTP qua email và gửi thư biên nhận xác nhận thanh toán học phí thành công.
 
+### 1.2 Biểu đồ Use Case Diagram (System iBanking)
 ```mermaid
 flowchart LR
-    user(("👤 Người dùng iBanking"))
-    smtp(("📧 Mailpit (SMTP Server)"))
-    
-    subgraph auth_sub ["Xác thực & Tài khoản"]
-        uc_login(["UC01: Đăng nhập iBanking"])
-        uc_profile(["UC02: Xem số dư & Hồ sơ cá nhân"])
+    user(("👤 iBanking User / Customer"))
+
+    subgraph ibanking ["System iBanking"]
+        direction TB
+        uc_signin(["Sign In / Log In"])
+        uc_profile(["View Account Profile & Balance"])
+        uc_query(["Query Tuition"])
+        uc_pay(["Pay Tuition"])
+        uc_otp(["Verify OTP"])
+        uc_history(["View Transaction History"])
     end
 
-    subgraph tuition_sub ["Nghiệp vụ Học phí"]
-        uc_search(["UC03: Tra cứu nợ học phí theo MSSV"])
-    end
+    tuition(("🏛️ Tuition Management System"))
+    email(("📧 Email Notification Service"))
 
-    subgraph payment_sub ["Điều phối Thanh toán (Saga)"]
-        uc_initiate(["UC04: Khởi tạo giao dịch thanh toán"])
-        uc_otp_send(["UC05: Gửi mã OTP xác thực"])
-        uc_otp_verify(["UC06: Nhập & Xác thực mã OTP (5 phút)"])
-        uc_deduct(["UC07: Trừ số dư tài khoản (Atomic)"])
-        uc_pay(["UC08: Gạch nợ học phí sinh viên"])
-        uc_refund(["UC09: Bù trừ Saga (Hoàn tiền khi gạch nợ lỗi)"])
-        uc_receipt(["UC10: Gửi email biên nhận thành công"])
-        uc_history(["UC11: Xem lịch sử giao dịch"])
-    end
+    %% Tương tác của iBanking User / Customer
+    user --- uc_signin
+    user --- uc_profile
+    user --- uc_query
+    user --- uc_pay
+    user --- uc_history
 
-    user --> uc_login
-    user --> uc_profile
-    user --> uc_search
-    user --> uc_initiate
-    user --> uc_otp_verify
-    user --> uc_history
+    %% Quan hệ Include giữa các Use Case
+    uc_pay -.->|"<<include>>"| uc_otp
 
-    uc_initiate -.->|<<include>>| uc_otp_send
-    uc_otp_send --> smtp
-
-    uc_otp_verify -.->|<<include>>| uc_deduct
-    uc_deduct -.->|<<include>>| uc_pay
-    uc_pay -.->|<<extend: khi lỗi>>| uc_refund
-    uc_pay -.->|<<include: khi thành công>>| uc_receipt
-    uc_receipt --> smtp
+    %% Tương tác với Hệ thống ngoài (External Services)
+    uc_query --- tuition
+    uc_pay --- tuition
+    uc_pay --- email
+    uc_otp --- email
 ```
+
+### 1.3 Đặc tả các Ca sử dụng chính (Use Case Specifications)
+| Mã UC | Tên Ca Sử Dụng | Actor Tham Gia | Mô Tả Nghiệp Vụ | Quan Hệ Kỹ Thuật |
+|:---|:---|:---|:---|:---|
+| **UC01** | **Sign In / Log In** | iBanking User / Customer | Người dùng đăng nhập vào hệ thống iBanking bằng tên đăng nhập và mật khẩu, nhận JWT token để ủy quyền cho các thao tác tiếp theo. | Độc lập |
+| **UC02** | **View Account Profile & Balance** | iBanking User / Customer | Người dùng xem thông tin định danh chủ tài khoản và số dư khả dụng (`balance`) hiện có. | Độc lập |
+| **UC03** | **Query Tuition** | iBanking User / Customer, Tuition Management System | Người dùng nhập MSSV để tra cứu khoản học phí còn nợ theo học kỳ. Hệ thống gọi sang Tuition Service để lấy dữ liệu. | Tương tác Tuition System |
+| **UC04** | **Pay Tuition** | iBanking User / Customer, Tuition Management System, Email Notification Service | Khởi tạo và điều phối giao dịch thanh toán học phí (trừ tiền tài khoản, gạch nợ học phí và gửi thông báo biên nhận). | `<<include>>` Verify OTP |
+| **UC05** | **Verify OTP** | Email Notification Service | Kiểm tra tính hợp lệ của mã OTP (6 chữ số, thời hạn hiệu lực 5 phút) do người dùng nhập để phê duyệt thanh toán. | Được include bởi Pay Tuition |
+| **UC06** | **View Transaction History** | iBanking User / Customer | Người dùng xem danh sách nhật ký các giao dịch thanh toán học phí đã thực hiện thành công. | Độc lập |
 
 ---
 
@@ -438,7 +441,7 @@ stateDiagram-v2
 
 | Tiêu Chí Đánh Giá | Điểm Tối Đa | Yêu Cầu Cụ Thể Trong Phiếu Chấm | Mức Độ Hoàn Thành & Vị Trí Minh Chứng Trong Đồ Án | Đánh Giá |
 |:---|:---:|:---|:---|:---:|
-| **1. Phân tích nghiệp vụ & UML** | **1.0** | • Use Case Diagram đúng actor & chức năng chính (0.5đ)<br>• ERD xác định hợp lý các entity, thuộc tính, khóa, quan hệ (0.5đ) | • **Mục 1:** Đầy đủ Use Case Diagram chi tiết (11 ca sử dụng, quan hệ include/extend chuẩn xác).<br>• **Mục 2:** ERD Conceptual $\rightarrow$ Logical $\rightarrow$ Physical, chứng minh đạt chuẩn 3NF. | **1.0 / 1.0** ✅ |
+| **1. Phân tích nghiệp vụ & UML** | **1.0** | • Use Case Diagram đúng actor & chức năng chính (0.5đ)<br>• ERD xác định hợp lý các entity, thuộc tính, khóa, quan hệ (0.5đ) | • **Mục 1:** Đầy đủ Use Case Diagram chi tiết (chuẩn hóa 6 ca sử dụng chính, 3 actor và quan hệ <<include>> chuẩn xác theo đề tài).<br>• **Mục 2:** ERD Conceptual $\rightarrow$ Logical $\rightarrow$ Physical, chứng minh đạt chuẩn 3NF. | **1.0 / 1.0** ✅ |
 | **2. Kiến trúc Microservices** | **1.5** | • Microservices Architecture Diagram rõ ràng (0.5đ)<br>• Phân rã hợp lý, xác định rõ trách nhiệm service (0.5đ)<br>• Giao tiếp service, database, external service & giải thích (0.5đ) | • **Mục 3:** Sơ đồ kiến trúc Microservices toàn cảnh.<br>• Phân định 4 microservices + Gateway + Mailpit + MySQL.<br>• Mẫu Database-per-Service, phân tích giải thích ưu điểm so với Monolith. | **1.5 / 1.5** ✅ |
 | **3. Thiết kế REST API** | **1.0** | • Đầy đủ API cho các chức năng chính, URI & Method hợp lý (0.5đ)<br>• Request/Response model, Status Code, validation & error handling (0.5đ) | • **Mục 4:** Bảng danh mục đặc tả chi tiết 12 REST API endpoints.<br>• Chuẩn hóa JSend format (`success`, `data`, `error`), HTTP status codes (200, 400, 401, 403, 404, 409, 500), Pydantic schemas. | **1.0 / 1.0** ✅ |
 | **4. Database & Data Persistence** | **1.0** | • Hiện thực DB phù hợp thiết kế, lưu trữ đầy đủ dữ liệu (0.5đ)<br>• Constraints/data validation cần thiết, dữ liệu mẫu hoạt động (0.5đ) | • 4 file DDL `init.sql` độc lập cho từng service trong thư mục `backend/*/db/`.<br>• Khóa chính, `UNIQUE`, `CHECK (balance >= 0)`, indexes, seed fixtures đầy đủ. | **1.0 / 1.0** ✅ |

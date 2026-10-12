@@ -22,44 +22,36 @@
 ### 2.1 Biểu Đồ Ca Sử Dụng (Use Case Diagram)
 ```mermaid
 flowchart LR
-    user(("👤 Người dùng iBanking"))
-    smtp(("📧 Mailpit (SMTP Server)"))
-    
-    subgraph auth_sub ["Xác thực & Tài khoản"]
-        uc_login(["UC01: Đăng nhập iBanking"])
-        uc_profile(["UC02: Xem số dư & Hồ sơ"])
+    user(("👤 iBanking User / Customer"))
+
+    subgraph ibanking ["System iBanking"]
+        direction TB
+        uc_signin(["Sign In / Log In"])
+        uc_profile(["View Account Profile & Balance"])
+        uc_query(["Query Tuition"])
+        uc_pay(["Pay Tuition"])
+        uc_otp(["Verify OTP"])
+        uc_history(["View Transaction History"])
     end
 
-    subgraph tuition_sub ["Nghiệp vụ Học phí"]
-        uc_search(["UC03: Tra cứu nợ học phí MSSV"])
-    end
+    tuition(("🏛️ Tuition Management System"))
+    email(("📧 Email Notification Service"))
 
-    subgraph payment_sub ["Điều phối Thanh toán (Saga)"]
-        uc_initiate(["UC04: Khởi tạo thanh toán"])
-        uc_otp_send(["UC05: Gửi OTP qua email"])
-        uc_otp_verify(["UC06: Xác thực OTP (5 phút)"])
-        uc_deduct(["UC07: Trừ tiền tài khoản (Atomic)"])
-        uc_pay(["UC08: Gạch nợ học phí sinh viên"])
-        uc_refund(["UC09: Bù trừ Saga (Hoàn tiền khi lỗi)"])
-        uc_receipt(["UC10: Gửi email biên nhận"])
-        uc_history(["UC11: Lịch sử giao dịch"])
-    end
+    %% Tương tác của iBanking User / Customer
+    user --- uc_signin
+    user --- uc_profile
+    user --- uc_query
+    user --- uc_pay
+    user --- uc_history
 
-    user --> uc_login
-    user --> uc_profile
-    user --> uc_search
-    user --> uc_initiate
-    user --> uc_otp_verify
-    user --> uc_history
+    %% Quan hệ Include giữa các Use Case
+    uc_pay -.->|"<<include>>"| uc_otp
 
-    uc_initiate -.->|<<include>>| uc_otp_send
-    uc_otp_send --> smtp
-
-    uc_otp_verify -.->|<<include>>| uc_deduct
-    uc_deduct -.->|<<include>>| uc_pay
-    uc_pay -.->|<<extend: khi trùng nợ>>| uc_refund
-    uc_pay -.->|<<include: khi thành công>>| uc_receipt
-    uc_receipt --> smtp
+    %% Tương tác với Hệ thống ngoài (External Services)
+    uc_query --- tuition
+    uc_pay --- tuition
+    uc_pay --- email
+    uc_otp --- email
 ```
 
 ### 2.2 Sơ Đồ Quan Hệ Thực Thể (ERD - Database-per-Service)
