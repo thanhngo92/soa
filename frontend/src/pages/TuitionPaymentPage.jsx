@@ -72,16 +72,7 @@ export default function TuitionPaymentPage() {
     }
   }
 
-  // Tự động tra cứu khi người dùng nhập đủ MSSV hợp lệ (Debounce 500ms)
-  useEffect(() => {
-    const trimmed = mssv.trim().toUpperCase()
-    if (isValidMssv(trimmed)) {
-      const timer = setTimeout(() => {
-        executeSearch(trimmed)
-      }, 500)
-      return () => clearTimeout(timer)
-    }
-  }, [mssv])
+  // Chỉ tra cứu khi người dùng bấm nút "Tra cứu" hoặc nhấn Enter (gọi handleSearch)
 
   const handleSearch = (e) => {
     if (e) e.preventDefault()
@@ -142,9 +133,6 @@ export default function TuitionPaymentPage() {
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tài khoản thanh toán</p>
                 <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="text-base font-bold text-foreground">{profile.full_name}</h2>
-                  <Badge variant="secondary" className="font-mono text-xs">
-                    {profile.username}
-                  </Badge>
                 </div>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground pt-0.5">
                   {profile.email && (
@@ -190,7 +178,10 @@ export default function TuitionPaymentPage() {
                 type="text"
                 placeholder="Nhập mã sinh viên..."
                 value={mssv}
-                onChange={(e) => setMssv(e.target.value.toUpperCase())}
+                onChange={(e) => {
+                  setMssv(e.target.value.toUpperCase())
+                  if (error) setError('')
+                }}
                 required
                 className="font-mono uppercase placeholder:normal-case h-11"
               />
@@ -298,7 +289,7 @@ export default function TuitionPaymentPage() {
                       className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer shrink-0"
                     />
                     <span>
-                      Tôi xác nhận thông tin sinh viên chính xác và đồng ý với các <strong>thỏa thuận và điều khoản của hệ thống</strong> để thực hiện trích nợ tài khoản thanh toán học phí.
+                      Tôi xác nhận thông tin sinh viên chính xác và đồng ý với các <strong>thỏa thuận và điều khoản của hệ thống.</strong>
                     </span>
                   </label>
 
