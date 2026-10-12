@@ -18,7 +18,7 @@ async def send_otp(http: httpx.AsyncClient, payment_id: str, email: str) -> None
         logger.error(f"Failed to request OTP from notification-service: {exc}")
 
 
-async def verify_otp(http: httpx.AsyncClient, payment_id: str, otp_code: str) -> bool:
+async def verify_otp(http: httpx.AsyncClient, payment_id: str, otp_code: str) -> dict:
     """Dispatches request to verify and consume OTP for a payment."""
     try:
         r = await http.post(
@@ -27,10 +27,18 @@ async def verify_otp(http: httpx.AsyncClient, payment_id: str, otp_code: str) ->
             headers={"X-Internal-Token": settings.INTERNAL_SERVICE_KEY},
             timeout=10.0,
         )
-        return r.json().get("success", False)
+        data = r.json()
+        if r.status_code == 200 and data.get("success"):
+            return {"success": True}
+        error_info = data.get("error", {})
+        return {
+            "success": False,
+            "code": error_info.get("code", "INVALID_OTP"),
+            "message": error_info.get("message", "Mã OTP không chính xác hoặc đã hết hạn"),
+        }
     except Exception as exc:
         logger.error(f"Failed to verify OTP with notification-service: {exc}")
-        return False
+        return {"success": False, "code": "NOTIFICATION_ERROR", "message": "Không thể kết nối dịch vụ OTP"}
 
 
 async def send_success_email(http: httpx.AsyncClient, payload: dict) -> None:

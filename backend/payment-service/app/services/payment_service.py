@@ -75,9 +75,13 @@ async def confirm(request: Request, user: dict, payment_id: str, otp_code: str) 
     semester = payment.get("semester")
 
     # 1. Xac thuc ma OTP
-    otp_valid = await notification_client.verify_otp(http, payment_id, otp_code)
-    if not otp_valid:
-        raise AppError("INVALID_OTP", "OTP is invalid, expired, or already used", 400)
+    otp_res = await notification_client.verify_otp(http, payment_id, otp_code)
+    if not otp_res.get("success"):
+        raise AppError(
+            otp_res.get("code", "INVALID_OTP"),
+            otp_res.get("message", "Mã OTP không chính xác, đã hết hạn hoặc quá số lần thử."),
+            400,
+        )
 
     # 2. Khoa trang thai FSM: PENDING -> PROCESSING
     transitioned = await transition_status(payment_id, "PENDING", "PROCESSING")

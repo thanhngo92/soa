@@ -1,17 +1,15 @@
 import { useState, useEffect } from 'react'
 import { getTuitionApi } from '@/services/tuitionService'
 import { initiatePaymentApi, confirmPaymentApi } from '@/services/paymentService'
-import { getMeApi } from '@/services/authService'
+import useAuth from '@/hooks/useAuth'
 import { formatCurrency } from '@/utils/formatters'
 import { isValidMssv } from '@/utils/validators'
 import OtpModal from '@/components/OtpModal'
 import ReceiptModal from '@/components/ReceiptModal'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import {
   Search,
   Wallet,
@@ -22,35 +20,26 @@ import {
   Loader2,
   CheckCircle2,
   Mail,
-  Phone
+  Phone,
+  ShieldCheck
 } from 'lucide-react'
 
 export default function TuitionPaymentPage() {
-  const [profile, setProfile]   = useState(null)
-  const [mssv, setMssv]         = useState('')
-  const [tuition, setTuition]   = useState(null)
+  const { user: authUser, refreshProfile } = useAuth()
+  const profile = (authUser && authUser.balance !== undefined) ? authUser : null
+
+  const [mssv, setMssv] = useState('')
+  const [tuition, setTuition] = useState(null)
   const [paymentId, setPaymentId] = useState(null)
   const [idempotencyKey, setIdempotencyKey] = useState('')
-  const [receipt, setReceipt]   = useState(null)
-  const [showOtp, setShowOtp]   = useState(false)
+  const [receipt, setReceipt] = useState(null)
+  const [showOtp, setShowOtp] = useState(false)
   const [agreedTerms, setAgreedTerms] = useState(false)
-  const [error, setError]       = useState('')
+  const [paymentMethod, setPaymentMethod] = useState('otp_email')
+  const [error, setError] = useState('')
   const [otpError, setOtpError] = useState('')
   const [searchLoading, setSearchLoading] = useState(false)
-  const [payLoading, setPayLoading]       = useState(false)
-
-  const fetchProfile = async () => {
-    try {
-      const res = await getMeApi()
-      setProfile(res.data.data)
-    } catch {
-      // Ignored
-    }
-  }
-
-  useEffect(() => {
-    fetchProfile()
-  }, [])
+  const [payLoading, setPayLoading] = useState(false)
 
   const executeSearch = async (studentId) => {
     const trimmedMssv = studentId.trim().toUpperCase()
@@ -72,7 +61,16 @@ export default function TuitionPaymentPage() {
     }
   }
 
-  // Chỉ tra cứu khi người dùng bấm nút "Tra cứu" hoặc nhấn Enter (gọi handleSearch)
+  // Tự động tra cứu khi người dùng nhập MSSV đúng chuẩn (theo quy định đề bài)
+  useEffect(() => {
+    const trimmed = mssv.trim().toUpperCase()
+    if (isValidMssv(trimmed) && trimmed.length >= 8) {
+      const timer = setTimeout(() => {
+        executeSearch(trimmed)
+      }, 500)
+      return () => clearTimeout(timer)
+    }
+  }, [mssv])
 
   const handleSearch = (e) => {
     if (e) e.preventDefault()
@@ -111,7 +109,7 @@ export default function TuitionPaymentPage() {
       setShowOtp(false)
       setReceipt(res.data.data)
       setTuition(null)
-      fetchProfile() // Refresh balance after payment
+      refreshProfile() // Cập nhật lại số dư mới nhất từ /me
     } catch (err) {
       setOtpError(err.response?.data?.error?.message || 'Xác nhận OTP thất bại')
     } finally {
@@ -276,6 +274,36 @@ export default function TuitionPaymentPage() {
                       </span>
                     </div>
                   )}
+
+                  <div className="pt-2 border-t border-border/60 space-y-1.5">
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
+                      Phương thức thanh toán / xác thực:
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      <label className="flex items-center gap-2 p-2.5 rounded-md border border-primary/40 bg-primary/5 cursor-pointer font-medium text-foreground">
+                        <input
+                          type="radio"
+                          name="payment_method"
+                          value="otp_email"
+                          checked={paymentMethod === 'otp_email'}
+                          onChange={() => setPaymentMethod('otp_email')}
+                          className="h-3.5 w-3.5 text-primary cursor-pointer"
+                        />
+                        <ShieldCheck className="h-3.5 w-3.5 text-primary shrink-0" />
+                        <span>Xác thực OTP qua Email</span>
+                      </label>
+                      <label className="flex items-center gap-2 p-2.5 rounded-md border border-border/40 bg-muted/30 opacity-60 cursor-not-allowed text-muted-foreground">
+                        <input
+                          type="radio"
+                          name="payment_method"
+                          value="otp_sms"
+                          disabled
+                          className="h-3.5 w-3.5 text-muted-foreground"
+                        />
+                        <span>SMS OTP (Đang bảo trì)</span>
+                      </label>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-3">
@@ -327,7 +355,7 @@ export default function TuitionPaymentPage() {
             ) : (
               <div className="w-full flex items-center justify-center gap-2 text-sm font-semibold text-emerald-800 dark:text-emerald-300 py-2">
                 <CheckCircle2 className="h-4 w-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
-                <span>Hóa đơn học phí đã được gạch nợ thành công</span>
+                <span>Hóa đơn học phí đã được thanh toán thành công</span>
               </div>
             )}
           </CardFooter>

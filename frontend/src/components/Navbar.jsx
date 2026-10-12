@@ -51,9 +51,9 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-3">
-          {user?.username && (
-            <Badge variant="outline" className="hidden sm:inline-flex font-mono text-xs font-normal text-muted-foreground">
-              {user.username}
+          {(user?.full_name || user?.username) && (
+            <Badge variant="outline" className="hidden sm:inline-flex text-xs font-normal text-muted-foreground">
+              {user.full_name || user.username}
             </Badge>
           )}
           <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-1.5 text-muted-foreground hover:text-destructive">

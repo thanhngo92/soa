@@ -71,14 +71,38 @@ async def generate_otp(payment_id: str, email: str) -> None:
 async def verify_otp(payment_id: str, otp_code: str) -> None:
     """
     Verifies OTP and marks it consumed in a single atomic SQL transaction.
-    Protects against replay attacks and expired codes.
+    Enforces:
+      - Max 3 verification attempts
+      - Expiration within 5 minutes
+      - Single-use consumption
+      - Informative error reporting as required by rubric
     """
     logger.info(f"Verifying OTP for payment_id={payment_id}")
     result = await verify_and_consume_otp(payment_id, otp_code)
-    if not result:
-        logger.warning(f"OTP verification failed for payment_id={payment_id}: invalid, expired, or already used")
-        raise AppError("INVALID_OTP", "OTP is invalid, expired, or already used", 400)
-    logger.info(f"OTP verified and consumed successfully for payment_id={payment_id}")
+    status = result.get("status") if result else "NOT_FOUND"
+
+    if status == "SUCCESS":
+        logger.info(f"OTP verified and consumed successfully for payment_id={payment_id}")
+        return
+
+    if status == "MAX_ATTEMPTS":
+        logger.warning(f"OTP verification failed for payment_id={payment_id}: max attempts exceeded (3 times)")
+        raise AppError("OTP_MAX_ATTEMPTS_EXCEEDED", "Bạn đã nhập sai mã OTP quá 3 lần. Giao dịch đã bị khóa.", 400)
+
+    if status == "EXPIRED":
+        logger.warning(f"OTP verification failed for payment_id={payment_id}: expired")
+        raise AppError("OTP_EXPIRED", "Mã OTP đã hết thời hạn hiệu lực (5 phút). Vui lòng thực hiện lại.", 400)
+
+    if status == "ALREADY_USED":
+        logger.warning(f"OTP verification failed for payment_id={payment_id}: already used")
+        raise AppError("OTP_ALREADY_USED", "Mã OTP này đã được sử dụng trước đó.", 400)
+
+    if status == "WRONG_CODE":
+        remaining = result.get("remaining", 0)
+        logger.warning(f"OTP verification failed for payment_id={payment_id}: wrong code. Remaining attempts: {remaining}")
+        raise AppError("INVALID_OTP", f"Mã OTP không chính xác. Bạn còn {remaining} lần thử.", 400)
+
+    raise AppError("INVALID_OTP", "Mã OTP không hợp lệ hoặc không tồn tại.", 400)
 
 
 async def send_success_email(
