@@ -20,130 +20,18 @@
 ## 2. Thiết Kế Nghiệp Vụ & Dữ Liệu (UML & ERD)
 
 ### 2.1 Biểu Đồ Ca Sử Dụng (Use Case Diagram)
-```mermaid
-flowchart LR
-    user(("👤 iBanking User / Customer"))
 
-    subgraph ibanking ["System iBanking"]
-        direction TB
-        uc_signin(["Sign In / Log In"])
-        uc_profile(["View Account Profile & Balance"])
-        uc_query(["Query Tuition"])
-        uc_pay(["Pay Tuition"])
-        uc_otp(["Verify OTP"])
-        uc_history(["View Transaction History"])
-    end
-
-    tuition(("🏛️ Tuition Management System"))
-    email(("📧 Email Notification Service"))
-
-    %% Tương tác của iBanking User / Customer
-    user --- uc_signin
-    user --- uc_profile
-    user --- uc_query
-    user --- uc_pay
-    user --- uc_history
-
-    %% Quan hệ Include giữa các Use Case
-    uc_pay -.->|&lt;&lt;include&gt;&gt;| uc_otp
-
-    %% Tương tác với Hệ thống ngoài (External Services)
-    uc_query --- tuition
-    uc_pay --- tuition
-    uc_pay --- email
-    uc_otp --- email
-```
+![Use Case Diagram](./docs/images/use_case_diagram.png)
 
 ### 2.2 Sơ Đồ Quan Hệ Thực Thể (ERD - Database-per-Service)
-```mermaid
-erDiagram
-    ACCOUNTS ||--o{ PAYMENTS : "thực hiện (account_id)"
-    TUITIONS ||--o{ PAYMENTS : "thanh toán cho (student_id)"
-    PAYMENTS ||--o{ OTPS : "xác thực cho (payment_id)"
 
-    ACCOUNTS {
-        int id PK "Khóa chính"
-        string username UK "Tên đăng nhập"
-        string password_hash "Mật khẩu Bcrypt"
-        string full_name "Họ tên người dùng"
-        string email "Email nhận OTP"
-        string phone "Số điện thoại"
-        decimal balance "Số dư (CHECK >= 0)"
-    }
-
-    TUITIONS {
-        int id PK "Khóa chính"
-        string student_id UK "MSSV sinh viên"
-        string student_name "Họ tên sinh viên"
-        string major "Ngành đào tạo"
-        string semester "Học kỳ"
-        decimal amount "Số tiền học phí"
-        string status "UNPAID | PAID"
-    }
-
-    PAYMENTS {
-        int id PK "Khóa chính"
-        string account_id "ID tài khoản"
-        string student_id "MSSV được đóng"
-        decimal amount "Số tiền"
-        string status "PENDING | SUCCESS | FAILED"
-        string error_code "Mã lỗi nếu FAILED"
-    }
-
-    OTPS {
-        int id PK "Khóa chính"
-        string payment_id "ID giao dịch"
-        string otp_code "Mã OTP 6 số"
-        string email "Email nhận OTP"
-        timestamp expires_at "Hạn 5 phút"
-        boolean is_used "Đã dùng (FALSE)"
-    }
-```
+![Database ERD](./docs/images/database_erd.png)
 
 ---
 
-## 3. Kiến Trúc Tổng Thể (Microservices Architecture)
+## 3. Kiến Trúc Tổng Thể (Microservices Architecture & Saga Orchestration)
 
-```mermaid
-flowchart LR
-    frontend["frontend (:3000)\nReact 18 + Vite"] --> api-gateway["api-gateway (:8877)\nFastAPI Reverse Proxy"]
-
-    subgraph services ["Microservices Backend (Docker Bridge Network: soa-net)"]
-        direction TB
-        account-service["account-service (:8661)"]
-        tuition-service["tuition-service (:8732)"]
-        payment-service["payment-service (:8815)\nSaga Orchestrator"]
-        notification-service["notification-service (:8940)"]
-    end
-
-    subgraph databases ["MySQL 8.0 Databases (:8552)"]
-        direction TB
-        account_db[("account_db")]
-        tuition_db[("tuition_db")]
-        payment_db[("payment_db")]
-        notification_db[("notification_db")]
-    end
-
-    subgraph mailpit ["Mailpit Mock SMTP"]
-        mailpit_srv["Mailpit (:8025 Web / :1025 SMTP)"]
-    end
-
-    api-gateway --> account-service
-    api-gateway --> tuition-service
-    api-gateway --> payment-service
-    api-gateway --> notification-service
-
-    account-service --> account_db
-    tuition-service --> tuition_db
-    payment-service --> payment_db
-    notification-service --> notification_db
-    notification-service --> mailpit_srv
-
-    payment-service -.->|1. Verify OTP| notification-service
-    payment-service -.->|2. Deduct Balance| account-service
-    payment-service -.->|3. Mark Paid| tuition-service
-    payment-service -.->|Saga Refund| account-service
-```
+![System Architecture Diagram](./docs/images/system_architecture.png)
 
 ---
 

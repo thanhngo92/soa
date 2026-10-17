@@ -16,39 +16,8 @@
 * **Email Notification Service (Dịch vụ thông báo Email):** Hệ thống dịch vụ phụ trợ tiếp nhận yêu cầu gửi mã xác thực 2FA OTP qua email và gửi thư biên nhận xác nhận thanh toán học phí thành công.
 
 ### 1.2 Biểu đồ Use Case Diagram (System iBanking)
-```mermaid
-flowchart LR
-    user(("👤 iBanking User / Customer"))
 
-    subgraph ibanking ["System iBanking"]
-        direction TB
-        uc_signin(["Sign In / Log In"])
-        uc_profile(["View Account Profile & Balance"])
-        uc_query(["Query Tuition"])
-        uc_pay(["Pay Tuition"])
-        uc_otp(["Verify OTP"])
-        uc_history(["View Transaction History"])
-    end
-
-    tuition(("🏛️ Tuition Management System"))
-    email(("📧 Email Notification Service"))
-
-    %% Tương tác của iBanking User / Customer
-    user --- uc_signin
-    user --- uc_profile
-    user --- uc_query
-    user --- uc_pay
-    user --- uc_history
-
-    %% Quan hệ Include giữa các Use Case
-    uc_pay -.->|&lt;&lt;include&gt;&gt;| uc_otp
-
-    %% Tương tác với Hệ thống ngoài (External Services)
-    uc_query --- tuition
-    uc_pay --- tuition
-    uc_pay --- email
-    uc_otp --- email
-```
+![Use Case Diagram](./images/use_case_diagram.png)
 
 ### 1.3 Đặc tả các Ca sử dụng chính (Use Case Specifications)
 | Mã UC | Tên Ca Sử Dụng | Actor Tham Gia | Mô Tả Nghiệp Vụ | Quan Hệ Kỹ Thuật |
@@ -78,60 +47,7 @@ Dựa trên yêu cầu của phân hệ đóng học phí iBanking, dữ liệu 
 ### 2.2 Thiết Kế Quan Niệm (Conceptual Database Design — ERD)
 Lược đồ thực thể - mối quan hệ (ERD) ở mức trừu tượng thể hiện các thực thể nghiệp vụ và bản số quan hệ (Cardinality):
 
-```mermaid
-erDiagram
-    ACCOUNTS ||--o{ PAYMENTS : "khởi tạo giao dịch (1:N)"
-    TUITIONS ||--o{ PAYMENTS : "thanh toán cho (1:N)"
-    PAYMENTS ||--o{ OTPS : "sinh mã xác thực 2FA (1:N)"
-
-    ACCOUNTS {
-        int id PK "Khóa chính tự tăng"
-        string username UK "Tên đăng nhập (Duy nhất)"
-        string password_hash "Mật khẩu mã hóa Bcrypt"
-        string full_name "Họ và tên chủ tài khoản"
-        string email "Email liên hệ & nhận thông báo"
-        string phone "Số điện thoại di động"
-        decimal balance "Số dư ví khả dụng (>= 0)"
-        timestamp created_at "Thời điểm mở tài khoản"
-    }
-
-    TUITIONS {
-        int id PK "Khóa chính tự tăng"
-        string student_id UK "MSSV sinh viên (Duy nhất)"
-        string student_name "Họ và tên sinh viên"
-        string major "Ngành đào tạo"
-        string semester "Học kỳ nợ học phí"
-        decimal amount "Số tiền học phí bắt buộc đóng"
-        string status "Trạng thái: UNPAID | PAID"
-        timestamp paid_at "Thời điểm gạch nợ thành công"
-        string paid_by "ID người thực hiện thanh toán"
-        string transaction_id "Mã giao dịch payment_id gạch nợ"
-        timestamp created_at "Thời điểm phát hành học phí"
-    }
-
-    PAYMENTS {
-        int id PK "Khóa chính tự tăng"
-        string account_id "Tham chiếu logic tới Account"
-        string email "Email người nộp tiền"
-        string student_id "MSSV được đóng học phí"
-        string student_name "Họ tên sinh viên được đóng"
-        decimal amount "Số tiền thanh toán"
-        string status "Trạng thái: PENDING | PROCESSING | SUCCESS | FAILED"
-        string error_code "Mã lỗi khi giao dịch thất bại"
-        timestamp created_at "Thời điểm bắt đầu giao dịch"
-        timestamp completed_at "Thời điểm hoàn tất giao dịch"
-    }
-
-    OTPS {
-        int id PK "Khóa chính tự tăng"
-        string payment_id "Tham chiếu logic tới Payment"
-        string otp_code "Mã xác thực 6 chữ số"
-        string email "Email nhận mã OTP"
-        timestamp expires_at "Hạn hiệu lực (chính xác 5 phút)"
-        boolean is_used "Cờ đã sử dụng (Mặc định: FALSE)"
-        timestamp created_at "Thời điểm sinh mã OTP"
-    }
-```
+![Database ERD](./images/database_erd.png)
 
 * **Bản số (Cardinality):**
   * `ACCOUNTS` (1) — ($0..N$) `PAYMENTS`: Một tài khoản có thể thực hiện nhiều lượt thanh toán học phí qua thời gian.
@@ -141,10 +57,10 @@ erDiagram
 ### 2.3 Thiết Kế Luận Lý & Chứng Minh Chuẩn Hóa 3NF (Logical Design & Normalization)
 
 #### 1. Lược đồ quan hệ (Relational Schema):
-* $\text{ACCOUNTS}(\underline{\text{id}}, \text{username}, \text{password\_hash}, \text{full\_name}, \text{email}, \text{phone}, \text{balance}, \text{created\_at})$
-* $\text{TUITIONS}(\underline{\text{id}}, \text{student\_id}, \text{student\_name}, \text{major}, \text{semester}, \text{amount}, \text{status}, \text{paid\_at}, \text{paid\_by}, \text{transaction\_id}, \text{created\_at})$
-* $\text{PAYMENTS}(\underline{\text{id}}, \text{account\_id}, \text{email}, \text{student\_id}, \text{student\_name}, \text{amount}, \text{status}, \text{error\_code}, \text{created\_at}, \text{completed\_at})$
-* $\text{OTPS}(\underline{\text{id}}, \text{payment\_id}, \text{otp\_code}, \text{email}, \text{expires\_at}, \text{is\_used}, \text{created\_at})$
+* **`ACCOUNTS`** (<u>`id`</u>, `username`, `password_hash`, `full_name`, `email`, `phone`, `balance`, `created_at`, `updated_at`)
+* **`TUITIONS`** (<u>`id`</u>, `student_id`, `student_name`, `major`, `semester`, `amount`, `status`, `paid_at`, `paid_by`, `transaction_id`, `created_at`)
+* **`PAYMENTS`** (<u>`id`</u>, `account_id`, `student_id`, `student_name`, `semester`, `email`, `amount`, `status`, `error_code`, `created_at`, `completed_at`)
+* **`OTPS`** (<u>`id`</u>, `payment_id`, `otp_code`, `email`, `expires_at`, `attempts`, `is_used`, `created_at`)
 
 #### 2. Chứng minh đạt chuẩn 3NF:
 * **Chuẩn 1 (1NF):** Mọi thuộc tính đều mang giá trị nguyên tử (Atomic values), không có mảng lặp hay thuộc tính đa trị.
@@ -193,35 +109,7 @@ Mỗi microservice sở hữu một tập tin khởi tạo DDL cô lập đặt 
 
 ## 3. Kiến Trúc Microservices & Điều Phối Hệ Thống
 
-```mermaid
-flowchart TD
-    client["💻 Web Client (React 18 + Vite :3000)"] -->|HTTP / REST| gw["🌐 API Gateway (FastAPI :8877)"]
-
-    subgraph internal_network ["Docker Bridge Network (soa-net)"]
-        direction TB
-        gw -->|Reverse Proxy /api/accounts| acc_svc["Account Service (:8661)"]
-        gw -->|Reverse Proxy /api/tuitions| tui_svc["Tuition Service (:8732)"]
-        gw -->|Reverse Proxy /api/payments| pay_svc["Payment Service (:8815)\n(Saga Orchestrator)"]
-        gw -->|Reverse Proxy /api/notifications| noti_svc["Notification Service (:8940)"]
-
-        pay_svc -.->|1. Verify OTP| noti_svc
-        pay_svc -.->|2. Deduct Balance| acc_svc
-        pay_svc -.->|3. Mark Paid| tui_svc
-        pay_svc -.->|Compensation: Refund| acc_svc
-        pay_svc -.->|Send Receipt Email| noti_svc
-    end
-
-    subgraph db_storage ["MySQL 8.0 Databases (:8552)"]
-        acc_svc --> acc_db[("account_db")]
-        tui_svc --> tui_db[("tuition_db")]
-        pay_svc --> pay_db[("payment_db")]
-        noti_svc --> noti_db[("notification_db")]
-    end
-
-    subgraph external_mail ["Mail Server"]
-        noti_svc --> mailpit["📧 Mailpit SMTP (:1025) / Web UI (:8025)"]
-    end
-```
+![System Architecture Diagram](./images/system_architecture.png)
 
 ---
 
