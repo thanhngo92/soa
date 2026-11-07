@@ -10,19 +10,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import {
-  Search,
-  Wallet,
-  GraduationCap,
-  CreditCard,
-  AlertCircle,
-  Loader2,
-  CheckCircle2,
-  Mail,
-  Phone,
-  User,
-  ShieldCheck
-} from 'lucide-react'
+import { AlertCircle, Loader2 } from 'lucide-react'
 
 const generateIdempotencyKey = (paymentId) =>
   typeof crypto !== 'undefined' && crypto.randomUUID
@@ -164,24 +152,21 @@ export default function TuitionPaymentPage() {
   const isPayable = tuition && tuition.status === 'UNPAID' && isBalanceSufficient && agreedTerms
 
   return (
-    <div className="container mx-auto max-w-5xl py-6 px-4 sm:px-6 space-y-6">
-      {/* Tiêu đề ngắn gọn, thoáng mắt */}
+    <div className="container mx-auto max-w-5xl py-6 px-4 sm:px-6 space-y-5">
       <div>
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-          <GraduationCap className="h-6 w-6 text-primary shrink-0" />
-          <span>Thanh toán học phí</span>
+        <h1 className="text-xl font-bold tracking-tight text-foreground">
+          Thanh toán học phí
         </h1>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* CỘT TRÁI (7 cột): Thông tin người nộp (Nhóm a) & Thông tin học phí (Nhóm b) */}
+        {/* CỘT TRÁI (7 cột): Người nộp tiền & Thông tin học phí */}
         <div className="lg:col-span-7 space-y-5">
-          {/* Nhóm a. Thông tin người nộp tiền */}
+          {/* Thông tin người nộp tiền */}
           <Card className="shadow-xs border">
             <CardHeader className="py-3 px-4 border-b bg-muted/20">
-              <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                <User className="h-4 w-4 text-primary shrink-0" />
-                <span>a. Người nộp tiền</span>
+              <CardTitle className="text-sm font-semibold text-foreground">
+                Người nộp tiền
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4">
@@ -210,13 +195,12 @@ export default function TuitionPaymentPage() {
             </CardContent>
           </Card>
 
-          {/* Nhóm b. Thông tin học phí */}
+          {/* Thông tin học phí sinh viên */}
           <Card className="shadow-xs border">
             <CardHeader className="py-3 px-4 border-b bg-muted/20">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                  <Search className="h-4 w-4 text-primary shrink-0" />
-                  <span>b. Thông tin học phí</span>
+                <CardTitle className="text-sm font-semibold text-foreground">
+                  Thông tin học phí
                 </CardTitle>
                 {searchLoading && (
                   <span className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -233,7 +217,7 @@ export default function TuitionPaymentPage() {
                 <Input
                   id="mssv"
                   type="text"
-                  placeholder="Nhập mã sinh viên (VD: 521H0001)..."
+                  placeholder="Nhập mã số sinh viên"
                   value={mssv}
                   onChange={(e) => {
                     setMssv(e.target.value.toUpperCase())
@@ -246,9 +230,9 @@ export default function TuitionPaymentPage() {
                 </Button>
               </form>
 
-              {/* Gợi ý MSSV mẫu gọn nhẹ */}
+              {/* Gợi ý MSSV mẫu */}
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <span>Mẫu:</span>
+                <span>Gợi ý:</span>
                 {SAMPLE_STUDENTS.map((s) => (
                   <button
                     key={s}
@@ -265,7 +249,7 @@ export default function TuitionPaymentPage() {
                 ))}
               </div>
 
-              {/* Thông báo lỗi */}
+              {/* Lỗi tra cứu */}
               {error && (
                 <div className="flex items-center gap-2 p-2.5 text-xs text-red-800 dark:text-red-200 bg-red-50 dark:bg-red-950/40 rounded-lg border border-red-200 dark:border-red-900/50">
                   <AlertCircle className="h-3.5 w-3.5 shrink-0" />
@@ -273,7 +257,7 @@ export default function TuitionPaymentPage() {
                 </div>
               )}
 
-              {/* Kết quả học phí sinh viên */}
+              {/* Kết quả chi tiết học phí */}
               {tuition ? (
                 <div className={`rounded-lg border bg-card p-4 space-y-3 transition-opacity duration-150 ${searchLoading ? 'opacity-60 pointer-events-none' : ''}`}>
                   <div className="flex items-center justify-between gap-2 pb-2.5 border-b">
@@ -298,7 +282,7 @@ export default function TuitionPaymentPage() {
 
                   {tuition.status === 'PAID' && tuition.paid_at && (
                     <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">
-                      ✓ Đã thanh toán: {formatDate(tuition.paid_at)}
+                      Đã thanh toán: {formatDate(tuition.paid_at)}
                     </p>
                   )}
                 </div>
@@ -311,13 +295,12 @@ export default function TuitionPaymentPage() {
           </Card>
         </div>
 
-        {/* CỘT PHẢI (5 cột): Nhóm c. Thông tin thanh toán */}
+        {/* CỘT PHẢI (5 cột): Chi tiết thanh toán */}
         <div className="lg:col-span-5 space-y-5 lg:sticky lg:top-20">
           <Card className="shadow-xs border">
             <CardHeader className="py-3 px-4 border-b bg-muted/20">
-              <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                <CreditCard className="h-4 w-4 text-primary shrink-0" />
-                <span>c. Thông tin thanh toán</span>
+              <CardTitle className="text-sm font-semibold text-foreground">
+                Chi tiết thanh toán
               </CardTitle>
             </CardHeader>
 
@@ -345,10 +328,9 @@ export default function TuitionPaymentPage() {
                 )}
               </div>
 
-              {/* Phương thức xác thực */}
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <ShieldCheck className="h-3.5 w-3.5 text-primary shrink-0" />
-                <span>Xác thực bằng mã OTP qua Email</span>
+              {/* Ghi chú phương thức */}
+              <div className="text-xs text-muted-foreground">
+                Phương thức xác thực: <span className="font-medium text-foreground">Mã OTP gửi qua Email</span>
               </div>
 
               {/* Điều khoản */}
@@ -361,7 +343,7 @@ export default function TuitionPaymentPage() {
                   disabled={!tuition || tuition.status === 'PAID' || !isBalanceSufficient || payLoading}
                   className="mt-0.5 h-3.5 w-3.5 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer shrink-0"
                 />
-                <span>Tôi xác nhận thông tin sinh viên và đồng ý với điều khoản thanh toán.</span>
+                <span>Tôi xác nhận thông tin sinh viên và đồng ý điều khoản thanh toán.</span>
               </label>
 
               {/* Cảnh báo trạng thái */}
