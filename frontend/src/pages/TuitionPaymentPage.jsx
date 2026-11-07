@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { getTuitionApi } from '@/services/tuitionService'
 import { initiatePaymentApi, confirmPaymentApi } from '@/services/paymentService'
 import useAuth from '@/hooks/useAuth'
-import { formatCurrency } from '@/utils/formatters'
+import { formatCurrency, formatDate } from '@/utils/formatters'
 import { isValidMssv } from '@/utils/validators'
 import OtpModal from '@/components/OtpModal'
 import ReceiptModal from '@/components/ReceiptModal'
@@ -21,7 +21,6 @@ import {
   Mail,
   Phone,
   ShieldCheck,
-  FileText,
   UserCheck,
   ArrowRight,
   Info
@@ -66,7 +65,8 @@ export default function TuitionPaymentPage() {
 
   // [Rubric Tiêu chí 5 & 7 / Đề bài Mục 2: Tra cứu học phí tự động & Chống Race Condition UI]
   // - Nghiệp vụ: Tự động tra cứu khi nhập đủ MSSV hợp lệ (6-10 ký tự) sau debounce 450ms.
-  // - Kỹ thuật: Dùng searchSeqRef kiểm tra chuỗi tuần tự để bỏ qua kết quả đến muộn từ mạng.
+  // - Kỹ thuật: Không xóa tuition giữa chừng để tránh giật giao diện (zero layout shift);
+  //             dùng searchSeqRef kiểm tra chuỗi tuần tự để bỏ qua kết quả đến muộn từ mạng.
   const executeSearch = async (studentId) => {
     const trimmedMssv = studentId.trim().toUpperCase()
     if (!isValidMssv(trimmedMssv)) {
@@ -76,16 +76,18 @@ export default function TuitionPaymentPage() {
     setError('')
     setOtpError('')
     setOtpLocked(false)
-    setTuition(null)
-    setAgreedTerms(false)
     setSearchLoading(true)
+
     try {
       const res = await getTuitionApi(trimmedMssv)
       if (seq === searchSeqRef.current) {
         setTuition(res.data.data)
+        setAgreedTerms(false)
       }
     } catch (err) {
       if (seq === searchSeqRef.current) {
+        setTuition(null)
+        setAgreedTerms(false)
         setError(err.response?.data?.error?.message || 'Không tìm thấy thông tin sinh viên hoặc học phí')
       }
     } finally {
@@ -97,13 +99,22 @@ export default function TuitionPaymentPage() {
 
   useEffect(() => {
     const trimmed = mssv.trim().toUpperCase()
-    if (isValidMssv(trimmed)) {
-      const timer = setTimeout(() => {
-        executeSearch(trimmed)
-      }, 450)
-      return () => clearTimeout(timer)
+    if (!isValidMssv(trimmed)) {
+      if (!trimmed) {
+        setTuition(null)
+        setError('')
+      }
+      return
     }
-  }, [mssv])
+    // Tránh bắn lại request trùng lặp nếu dữ liệu sinh viên đã đang hiển thị đúng MSSV này
+    if (tuition && tuition.student_id === trimmed) {
+      return
+    }
+    const timer = setTimeout(() => {
+      executeSearch(trimmed)
+    }, 450)
+    return () => clearTimeout(timer)
+  }, [mssv, tuition?.student_id])
 
   const handleSearch = (e) => {
     if (e) e.preventDefault()
@@ -116,6 +127,9 @@ export default function TuitionPaymentPage() {
   }
 
   const handleSelectSample = (sampleMssv) => {
+    if (mssv === sampleMssv && tuition && tuition.student_id === sampleMssv) {
+      return
+    }
     setMssv(sampleMssv)
     executeSearch(sampleMssv)
   }
@@ -264,10 +278,18 @@ export default function TuitionPaymentPage() {
           {/* ========================================================================= */}
           <Card className="shadow-sm border">
             <CardHeader className="pb-3 border-b bg-muted/20">
-              <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
-                <Search className="h-5 w-5 text-primary shrink-0" />
-                <span>b. Thông tin học phí</span>
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
+                  <Search className="h-5 w-5 text-primary shrink-0" />
+                  <span>b. Thông tin học phí</span>
+                </CardTitle>
+                {searchLoading && (
+                  <span className="flex items-center gap-1.5 text-xs text-primary font-medium">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span>Đang tra cứu...</span>
+                  </span>
+                )}
+              </div>
               <CardDescription className="text-xs">
                 Nhập mã số sinh viên để hệ thống tự động tra cứu công nợ học phí từ nhà trường
               </CardDescription>
@@ -315,7 +337,11 @@ export default function TuitionPaymentPage() {
                       key={s.mssv}
                       type="button"
                       onClick={() => handleSelectSample(s.mssv)}
-                      className="px-2 py-0.5 rounded-md border border-border/80 bg-muted/40 hover:bg-muted font-mono text-[11px] text-foreground transition-colors"
+                      className={`px-2.5 py-1 rounded-md border text-xs font-mono transition-all select-none cursor-pointer ${
+                        mssv === s.mssv
+                          ? 'border-primary bg-primary text-primary-foreground font-semibold shadow-xs'
+                          : 'border-border/80 bg-muted/40 hover:bg-muted text-foreground'
+                      }`}
                     >
                       {s.mssv} ({s.name})
                     </button>
@@ -342,8 +368,8 @@ export default function TuitionPaymentPage() {
                 </div>
               )}
 
-              {/* Đang tra cứu loading */}
-              {searchLoading && (
+              {/* Đang tra cứu lần đầu khi chưa có dữ liệu */}
+              {searchLoading && !tuition && (
                 <div className="rounded-xl border p-8 text-center bg-muted/10 space-y-2">
                   <Loader2 className="mx-auto h-7 w-7 text-primary animate-spin" />
                   <p className="text-sm font-medium text-muted-foreground">Đang truy vấn dữ liệu từ phòng Đào tạo & Kế toán...</p>
@@ -351,8 +377,8 @@ export default function TuitionPaymentPage() {
               )}
 
               {/* Kết quả thông tin học phí khi tìm thấy */}
-              {tuition && !searchLoading && (
-                <div className="rounded-xl border bg-card p-5 space-y-4 shadow-sm">
+              {tuition && (
+                <div className={`rounded-xl border bg-card p-5 space-y-4 shadow-sm transition-opacity duration-150 ${searchLoading ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
                   <div className="flex items-start justify-between gap-3 pb-3 border-b">
                     <div>
                       <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
@@ -392,6 +418,14 @@ export default function TuitionPaymentPage() {
                       (Toàn bộ học kỳ)
                     </span>
                   </div>
+
+                  {/* Hiển thị chi tiết thời gian đã đóng nếu học phí đã PAID */}
+                  {tuition.status === 'PAID' && tuition.paid_at && (
+                    <div className="flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 p-3 rounded-lg border border-emerald-200 dark:border-emerald-900/50">
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                      <span>Đã hoàn tất thanh toán học phí vào lúc: <strong>{formatDate(tuition.paid_at)}</strong></span>
+                    </div>
+                  )}
 
                   <div className="flex items-start gap-2 text-xs text-muted-foreground pt-1">
                     <Info className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
@@ -548,6 +582,7 @@ export default function TuitionPaymentPage() {
       <OtpModal
         open={showOtp}
         onConfirm={handleConfirm}
+        onResend={handleInitiate}
         onCancel={() => {
           setShowOtp(false)
           setOtpError('')
