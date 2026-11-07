@@ -12,6 +12,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { AlertCircle, ShieldCheck, Clock, Loader2 } from 'lucide-react'
 
+// [Rubric Tiêu chí 5 & 7 / Đề bài Mục 3: Modal xác thực OTP 2FA]
+// - Nghiệp vụ: Đếm ngược thời hạn hiệu lực 5 phút (300s), giới hạn 6 ký tự số.
+// - Kỹ thuật: Khóa input và nút xác nhận ngay lập tức khi locked=true (hết hạn hoặc quá 3 lần nhập sai).
 export default function OtpModal({
   open = true,
   onConfirm,

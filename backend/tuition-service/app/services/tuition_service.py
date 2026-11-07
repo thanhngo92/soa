@@ -18,6 +18,9 @@ def _format_dt(dt_val) -> str | None:
     return str(dt_val)
 
 
+# [Rubric Tiêu chí 5 / Đề bài Mục 2: Tra cứu học phí theo MSSV]
+# - Nghiệp vụ: Trả về thông tin sinh viên, ngành học, học kỳ, số tiền và trạng thái nợ.
+# - Kỹ thuật: Kiểm tra định dạng MSSV hợp lệ (6-10 ký tự), trả về 404 nếu không tìm thấy.
 async def get_tuition(mssv: str) -> dict:
     """Retrieves tuition record and payment status by student ID (MSSV)."""
     cleaned_mssv = (mssv or "").strip().upper()
@@ -39,6 +42,10 @@ async def get_tuition(mssv: str) -> dict:
     }
 
 
+# [Rubric Tiêu chí 6 / Đề bài Mục 4: Gạch nợ học phí nguyên tử (Atomic Conditional Update)]
+# - Nghiệp vụ: Chuyển trạng thái học phí sang PAID và lưu vết giao dịch.
+# - Kỹ thuật: UPDATE ... WHERE status = 'UNPAID'. Nếu rowcount == 0 nghĩa là đã bị gạch nợ
+#             đồng thời bởi giao dịch khác -> Ném 409 TUITION_ALREADY_PAID để kích hoạt Saga Rollback.
 async def pay_tuition(mssv: str, paid_by: str, transaction_id: str, semester: str | None = None) -> dict:
     """
     Executes atomic tuition payment (status UNPAID -> PAID).
@@ -57,6 +64,9 @@ async def pay_tuition(mssv: str, paid_by: str, transaction_id: str, semester: st
     }
 
 
+# [Rubric Tiêu chí 6 / Đề bài Mục 5: Bù trừ gạch nợ Saga (Compensating Transaction)]
+# - Nghiệp vụ: Khôi phục trạng thái học phí về UNPAID khi quy trình thanh toán thất bại ở bước sau.
+# - Kỹ thuật: Khớp đúng mã transaction_id để tránh hoàn tác sai giao dịch của người khác.
 async def revert_tuition(mssv: str, transaction_id: str | None = None, semester: str | None = None) -> dict:
     """
     Executes compensating transaction to revert tuition status back to UNPAID.

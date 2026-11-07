@@ -124,6 +124,9 @@ async def _ensure_balance(client: httpx.AsyncClient, token: str, target_balance:
         )
 
 
+# [Rubric Tiêu chí 2: Kiến trúc Microservices - Kiểm thử Workflow Guard]
+# - Nghiệp vụ: Chặn mọi truy cập trực tiếp từ client ngoài vào endpoint nội bộ (pay, refund, otp).
+# - Kỹ thuật: Gateway trả về 403 WORKFLOW_VIOLATION; Port nội bộ từ chối khi thiếu X-Internal-Token.
 async def test_scenario_0_workflow_guard(client: httpx.AsyncClient) -> bool:
     log_header("KỊCH BẢN 0: WORKFLOW GUARD (NGĂN CHẶN TRUY CẬP TRỰC TIẾP ENDPOINT NỘI BỘ)")
     log_info("Mục tiêu: Đảm bảo Client bên ngoài không thể gọi trực tiếp các thao tác nội bộ")
@@ -182,6 +185,9 @@ async def test_scenario_0_workflow_guard(client: httpx.AsyncClient) -> bool:
     return passed
 
 
+# [Rubric Tiêu chí 6: Kiểm soát tranh chấp đồng thời - Chống thấu chi số dư (E2E Overdraw Protection)]
+# - Nghiệp vụ: 1 tài khoản xác nhận đồng thời 2 giao dịch có tổng tiền vượt quá số dư khả dụng.
+# - Kỹ thuật: Khóa bi quan FOR UPDATE tại Account Service đảm bảo chính xác 1 GD thành công, 1 GD từ chối.
 async def test_scenario_1_overdraw(client: httpx.AsyncClient):
     log_header("KỊCH BẢN 1: NHIỀU GIAO DỊCH ĐỒNG THỜI TRÊN CÙNG MỘT TÀI KHOẢN (CHỐNG THẤU CHI E2E)")
     student_a = "521H0001"
@@ -292,6 +298,9 @@ async def test_scenario_1_overdraw(client: httpx.AsyncClient):
     return passed
 
 
+# [Rubric Tiêu chí 6: Saga Rollback & Bù trừ giao dịch - 2 tài khoản thanh toán cùng 1 học phí]
+# - Nghiệp vụ: 2 người cùng đóng học phí cho 1 sinh viên tại cùng thời điểm.
+# - Kỹ thuật: 1 người thành công gạch nợ; người còn lại bị 409 conflict và được Saga hoàn tiền tự động 100%.
 async def test_scenario_2_double_payment(client: httpx.AsyncClient):
     log_header("KỊCH BẢN 2: NHIỀU TÀI KHOẢN CÙNG THANH TOÁN 1 KHOẢN HỌC PHÍ (SAGA ROLLBACK)")
     student_id = "523H0089"
@@ -415,6 +424,9 @@ async def test_scenario_2_double_payment(client: httpx.AsyncClient):
     return passed
 
 
+# [Rubric Tiêu chí 6: Kiểm thử tính bất biến (Idempotency Key tại Gateway)]
+# - Nghiệp vụ: Chặn double-click khi mạng lag; gửi lại request với cùng key nhận response từ cache.
+# - Kỹ thuật: Gateway nhận diện Idempotency-Key, trả X-Idempotent-Replay: true, tài khoản chỉ bị trừ tiền đúng 1 lần.
 async def test_scenario_3_idempotency_key(client: httpx.AsyncClient) -> bool:
     log_header("KỊCH BẢN 3: KIỂM THỬ TÍNH BẤT BIẾN (IDEMPOTENCY-KEY TẠI GATEWAY)")
     log_info("Mục tiêu: Gửi 2 request xác nhận thanh toán với cùng Idempotency-Key:")

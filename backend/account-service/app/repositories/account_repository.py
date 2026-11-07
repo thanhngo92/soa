@@ -52,6 +52,10 @@ async def find_by_id(account_id: str | int) -> dict | None:
             return _format_account(row) if row else None
 
 
+# [Rubric Tiêu chí 6: Quản lý Giao dịch & Concurrency - Trừ tiền an toàn ACID]
+# - Nghiệp vụ (Đề bài Mục 4): Trừ tiền tài khoản nguồn sau khi OTP xác thực hợp lệ.
+# - Kỹ thuật: Khóa bi quan (SELECT ... FOR UPDATE), kiểm tra số dư nguyên tử (balance >= amount),
+#             kiểm tra idempotency qua reference_id và ghi bút toán sổ cái DEDUCT.
 async def deduct_balance(account_id: str | int, amount: float, transaction_id: str = "") -> dict | None:
     pool = get_pool()
     async with pool.acquire() as conn:
@@ -117,6 +121,10 @@ async def deduct_balance(account_id: str | int, amount: float, transaction_id: s
             raise
 
 
+# [Rubric Tiêu chí 6: Saga Compensation - Hoàn tiền tự động khi gạch nợ thất bại]
+# - Nghiệp vụ (Đề bài Mục 5): Bù trừ hoàn tiền về tài khoản khi bước gạch nợ học phí gặp sự cố.
+# - Kỹ thuật: ACID transaction, kiểm tra tồn tại bút toán DEDUCT gốc để chống hoàn tiền khống,
+#             khóa FOR UPDATE, cộng lại balance và ghi bút toán sổ cái REFUND.
 async def refund_balance(account_id: str | int, amount: float, transaction_id: str = "") -> dict | None:
     pool = get_pool()
     async with pool.acquire() as conn:

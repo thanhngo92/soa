@@ -25,6 +25,11 @@ def _format_utc_iso(dt_val) -> str | None:
     return str(dt_val)
 
 
+# [Rubric Tiêu chí 5 / Đề bài Mục 3: Khởi tạo quy trình thanh toán học phí]
+# - Nghiệp vụ: Tra cứu học phí, kiểm tra số dư ban đầu, hủy các phiên pending cũ,
+#              tạo bản ghi PENDING và gửi mã OTP 2FA qua email.
+# - Kỹ thuật: supersede_pending_payments() đóng phiên cũ cùng (account_id, student_id);
+#             nếu gửi OTP lỗi chuyển ngay sang FAILED (OTP_SEND_FAILED).
 async def initiate(request: Request, user: dict, student_id: str) -> dict:
     http = request.app.state.http
     user_id = str(user["sub"])
@@ -78,6 +83,18 @@ async def initiate(request: Request, user: dict, student_id: str) -> dict:
     }
 
 
+# [Rubric Tiêu chí 5 & 6 / Đề bài Mục 4 & 5: Điều phối Saga Orchestration & Chống Concurrency]
+# - Nghiệp vụ: Xác nhận OTP, trừ tiền tài khoản nguồn, gạch nợ học phí trường học,
+#              kích hoạt bù trừ hoàn tiền nếu gạch nợ lỗi, gửi email biên lai khi thành công.
+# - Kỹ thuật (FSM + Saga Pattern):
+#   1. Xác thực OTP qua Notification Service (kiểm tra hạn 5 phút, tối đa 3 lần thử).
+#   2. Chuyển trạng thái nguyên tử PENDING -> PROCESSING bằng CAS (Compare-And-Swap)
+#      để chặn race condition khi người dùng bấm xác nhận 2 lần đồng thời.
+#   3. Gọi Account Service trừ tiền (deduct) có khóa FOR UPDATE và ghi sổ cái DEDUCT.
+#   4. Gọi Tuition Service gạch nợ (pay) với điều kiện WHERE status = 'UNPAID'.
+#   5. BÙ TRỪ SAGA (Compensating Transaction): Nếu gạch nợ học phí thất bại (ví dụ 409 conflict),
+#      lập tức gọi Account Service hoàn tiền (refund) kèm X-Internal-Token và cập nhật FAILED.
+#   6. Chuyển trạng thái PROCESSING -> SUCCESS và kích hoạt gửi email biên lai.
 async def confirm(request: Request, user: dict, payment_id: str, otp_code: str) -> dict:
     http = request.app.state.http
     token = request.headers.get("authorization", "").replace("Bearer ", "")

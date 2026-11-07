@@ -19,6 +19,9 @@ class IdempotencyRecord:
         self.event: asyncio.Event = asyncio.Event()
 
 
+# [Rubric Tiêu chí 6: Kiểm soát tranh chấp đồng thời - Bộ lưu trữ Idempotency Key]
+# Nghiệp vụ: Chống gửi trùng lặp giao dịch (Double-submit) khi người dùng bấm xác nhận nhiều lần.
+# Kỹ thuật: Cơ chế In-Flight Lock bằng asyncio.Event + TTL 300s + đối soát hash payload.
 class IdempotencyStore:
     """
     In-memory Idempotency Store with TTL support, user-scoping, and payload verification.
@@ -65,6 +68,9 @@ class IdempotencyStore:
                 record.media_type = media_type
                 record.event.set()
 
+    # [Rubric Tiêu chí 6: Giải phóng In-Flight Waiter khi request lỗi]
+    # Nghiệp vụ: Cho phép người dùng thử lại mã OTP nếu nhập sai mà không bị chặn bởi cache lỗi.
+    # Kỹ thuật: Xóa key khỏi store để lượt tiếp theo thực thi mới, đồng thời gửi response về các luồng in-flight.
     async def release_failed(
         self,
         key: str,

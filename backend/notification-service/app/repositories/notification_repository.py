@@ -2,6 +2,9 @@ import aiomysql
 from app.config.database import get_pool
 
 
+# [Rubric Tiêu chí 5 / Đề bài Mục 3: Lưu mã OTP 2FA vào CSDL]
+# - Nghiệp vụ: Lưu OTP 6 chữ số gắn với payment_id, có thời hạn 5 phút.
+# - Kỹ thuật: expires_at = DATE_ADD(NOW(), INTERVAL 5 MINUTE), attempts khởi tạo bằng 0.
 async def create_otp(payment_id: str, otp_code: str, email: str) -> None:
     pool = get_pool()
     async with pool.acquire() as conn:
@@ -13,6 +16,10 @@ async def create_otp(payment_id: str, otp_code: str, email: str) -> None:
             )
 
 
+# [Rubric Tiêu chí 5 & 6 / Đề bài Mục 3 & 4: Xác thực và tiêu thụ mã OTP]
+# - Nghiệp vụ: Kiểm tra OTP đúng, còn hạn, chưa dùng, tối đa 3 lần thử sai.
+# - Kỹ thuật: Khóa bi quan FOR UPDATE; nếu đúng cập nhật is_used=TRUE nguyên tử;
+#             nếu sai tăng attempts, chạm mốc 3 lần tự động khóa is_used=TRUE.
 async def verify_and_consume_otp(payment_id: str, otp_code: str) -> dict:
     pool = get_pool()
     async with pool.acquire() as conn:

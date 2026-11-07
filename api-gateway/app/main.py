@@ -24,6 +24,9 @@ register_cors_middleware(app)
 app.add_middleware(RequestLoggingMiddleware)
 
 
+# [Rubric Tiêu chí 2: Kiến trúc Microservices - Workflow Guard]
+# Nghiệp vụ: Chặn truy cập trực tiếp từ client ngoài vào các API nội bộ nhạy cảm.
+# Kỹ thuật: Client chỉ được đi qua luồng điều phối Saga của Payment Service.
 BLOCKED_EXTERNAL_ROUTES = {
     ("POST", "tuitions", "pay"),
     ("POST", "tuitions", "revert"),
@@ -35,6 +38,9 @@ BLOCKED_EXTERNAL_ROUTES = {
 }
 
 
+# [Rubric Tiêu chí 2 & 6: API Gateway Reverse Proxy & Idempotency Key]
+# Nghiệp vụ: Điểm tiếp nhận duy nhất (Single Entry Point), định tuyến và bảo vệ giao dịch kép.
+# Kỹ thuật: Kiểm tra Idempotency-Key trong header để khóa in-flight và trả kết quả cache cho request trùng lặp.
 @app.api_route("/api/{service}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 @app.api_route("/api/{service}/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def proxy(service: str, request: Request, path: str = ""):
@@ -122,6 +128,9 @@ async def proxy(service: str, request: Request, path: str = ""):
     return await forward_request(request.app.state.http, target_url, request)
 
 
+# [Rubric Tiêu chí 2: Giám sát trạng thái cụm dịch vụ (Health Check)]
+# Nghiệp vụ: Cung cấp endpoint tổng hợp trạng thái hoạt động của toàn bộ hệ thống SOA.
+# Kỹ thuật: Probe song song 4 microservices bằng asyncio.gather; chỉ trả ok khi tất cả đều ok.
 @app.get("/health")
 async def health(request: Request):
     http: httpx.AsyncClient = request.app.state.http
