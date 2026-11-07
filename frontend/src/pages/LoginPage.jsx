@@ -6,7 +6,14 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { AlertCircle, Loader2 } from 'lucide-react'
+import { AlertCircle, Loader2, GraduationCap } from 'lucide-react'
+
+const SAMPLE_USERS = [
+  { username: 'sv.nguyen', name: 'Nguyễn Văn An', note: '7.5M VND' },
+  { username: 'sv.tran', name: 'Trần Thị Bích', note: '5.0M VND' },
+  { username: 'sv.le', name: 'Lê Hoàng Nam', note: '12M VND' },
+  { username: 'sv.pham', name: 'Phạm Minh Đức', note: '15M VND' },
+]
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -30,18 +37,26 @@ export default function LoginPage() {
     }
   }
 
+  const fillSample = (u) => {
+    setForm({ username: u, password: 'Test@123' })
+    setError('')
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-muted/20">
       <Card className="w-full max-w-md shadow-sm border bg-card">
         <CardHeader className="space-y-1.5 text-center pb-6">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm mb-1">
+            <GraduationCap className="h-6 w-6" />
+          </div>
           <CardTitle className="text-2xl font-bold tracking-tight text-foreground">
             iBanking TDTU
           </CardTitle>
           <CardDescription className="text-sm text-muted-foreground">
-            Đăng nhập tài khoản
+            Cổng thanh toán học phí sinh viên
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-5">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="username">Tên đăng nhập</Label>
@@ -86,6 +101,25 @@ export default function LoginPage() {
               )}
             </Button>
           </form>
+
+          <div className="pt-3 border-t border-border/60">
+            <p className="text-xs text-muted-foreground font-medium mb-2 text-center">
+              Chọn nhanh tài khoản thử nghiệm:
+            </p>
+            <div className="grid grid-cols-2 gap-1.5">
+              {SAMPLE_USERS.map((item) => (
+                <button
+                  key={item.username}
+                  type="button"
+                  onClick={() => fillSample(item.username)}
+                  className="p-2 rounded-lg border border-border/80 bg-muted/40 hover:bg-muted/80 text-left transition-colors"
+                >
+                  <p className="text-xs font-semibold text-foreground truncate">{item.name}</p>
+                  <p className="text-[11px] text-muted-foreground font-mono">{item.username} • {item.note}</p>
+                </button>
+              ))}
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

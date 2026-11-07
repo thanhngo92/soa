@@ -61,7 +61,7 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="container mx-auto max-w-4xl py-8 px-4 sm:px-6 space-y-6">
+    <div className="container mx-auto max-w-6xl py-8 px-4 sm:px-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
           <History className="h-6 w-6 text-primary shrink-0" />
