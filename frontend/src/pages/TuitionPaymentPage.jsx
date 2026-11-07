@@ -164,12 +164,12 @@ export default function TuitionPaymentPage() {
         <div className="lg:col-span-7 space-y-5">
           {/* Thông tin người nộp tiền */}
           <Card className="shadow-xs border">
-            <CardHeader className="py-3 px-4 border-b bg-muted/20">
+            <CardHeader className="pt-4 pb-2 px-4">
               <CardTitle className="text-sm font-semibold text-foreground">
                 Người nộp tiền
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4">
+            <CardContent className="p-4 pt-1">
               {profile ? (
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
@@ -197,7 +197,7 @@ export default function TuitionPaymentPage() {
 
           {/* Thông tin học phí sinh viên */}
           <Card className="shadow-xs border">
-            <CardHeader className="py-3 px-4 border-b bg-muted/20">
+            <CardHeader className="pt-4 pb-2 px-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-semibold text-foreground">
                   Thông tin học phí
@@ -211,7 +211,7 @@ export default function TuitionPaymentPage() {
               </div>
             </CardHeader>
 
-            <CardContent className="p-4 space-y-3">
+            <CardContent className="p-4 pt-1 space-y-3">
               {/* Form tra cứu MSSV */}
               <form onSubmit={handleSearch} className="flex gap-2">
                 <Input
@@ -298,13 +298,13 @@ export default function TuitionPaymentPage() {
         {/* CỘT PHẢI (5 cột): Chi tiết thanh toán */}
         <div className="lg:col-span-5 space-y-5 lg:sticky lg:top-20">
           <Card className="shadow-xs border">
-            <CardHeader className="py-3 px-4 border-b bg-muted/20">
+            <CardHeader className="pt-4 pb-2 px-4">
               <CardTitle className="text-sm font-semibold text-foreground">
                 Chi tiết thanh toán
               </CardTitle>
             </CardHeader>
 
-            <CardContent className="p-4 space-y-3.5 text-sm">
+            <CardContent className="p-4 pt-1 space-y-3.5 text-sm">
               <div className="space-y-2 rounded-lg bg-muted/30 p-3 border text-xs">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Số tiền thanh toán</span>

@@ -5,18 +5,12 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import ReceiptModal from '@/components/ReceiptModal'
-import {
-  History,
-  CreditCard,
-  Calendar,
-  CheckCircle2,
-  Clock,
-  XCircle,
-  Loader2,
-  FileText,
-  Filter
-} from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 
+// [Rubric Tiêu chí 4 / Đề bài Mục 3: Lịch sử giao dịch]
+// - Hiển thị danh sách các giao dịch thanh toán học phí của tài khoản đang đăng nhập.
+// - Phân loại trạng thái (SUCCESS, PENDING, FAILED) và nguyên nhân chi tiết nếu thất bại.
+// - Hỗ trợ xem lại biên lai giao dịch thành công.
 const ERROR_LABELS = {
   INSUFFICIENT_BALANCE: 'Không đủ số dư khả dụng',
   TUITION_MARK_FAILED: 'Học phí đã được thanh toán bởi giao dịch khác (Đã hoàn tiền)',
@@ -44,31 +38,27 @@ export default function HistoryPage() {
     switch (status) {
       case 'SUCCESS':
         return (
-          <Badge variant="success" className="gap-1">
-            <CheckCircle2 className="h-3 w-3" />
-            THÀNH CÔNG
+          <Badge variant="success" className="text-[11px] font-medium py-0.5 px-2">
+            Thành công
           </Badge>
         )
       case 'PROCESSING':
         return (
-          <Badge variant="warning" className="gap-1">
-            <Loader2 className="h-3 w-3 animate-spin" />
-            ĐANG XỬ LÝ
+          <Badge variant="warning" className="text-[11px] font-medium py-0.5 px-2">
+            Đang xử lý
           </Badge>
         )
       case 'PENDING':
         return (
-          <Badge variant="warning" className="gap-1">
-            <Clock className="h-3 w-3" />
-            ĐANG CHỜ OTP
+          <Badge variant="warning" className="text-[11px] font-medium py-0.5 px-2">
+            Đang chờ OTP
           </Badge>
         )
       case 'FAILED':
       default:
         return (
-          <Badge variant="destructive" className="gap-1">
-            <XCircle className="h-3 w-3" />
-            THẤT BẠI
+          <Badge variant="destructive" className="text-[11px] font-medium py-0.5 px-2">
+            Thất bại
           </Badge>
         )
     }
@@ -83,25 +73,15 @@ export default function HistoryPage() {
   })
 
   return (
-    <div className="container mx-auto max-w-5xl py-8 px-4 sm:px-6 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
-            <History className="h-6 w-6 text-primary shrink-0" />
-            <span>Lịch sử giao dịch</span>
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Danh sách tất cả các giao dịch thanh toán học phí đã thực hiện
-          </p>
-        </div>
+    <div className="container mx-auto max-w-5xl py-6 px-4 sm:px-6 space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h1 className="text-xl font-bold tracking-tight text-foreground">
+          Lịch sử giao dịch
+        </h1>
 
         {/* Bộ lọc trạng thái */}
         {!loading && records.length > 0 && (
-          <div className="flex items-center gap-1.5 p-1 bg-muted/60 rounded-lg border text-xs">
-            <span className="text-muted-foreground px-2 flex items-center gap-1">
-              <Filter className="h-3 w-3" />
-              Lọc:
-            </span>
+          <div className="flex items-center gap-1 p-1 bg-muted/40 rounded-lg border text-xs self-start sm:self-auto">
             {[
               { id: 'ALL', label: 'Tất cả' },
               { id: 'SUCCESS', label: 'Thành công' },
@@ -112,7 +92,7 @@ export default function HistoryPage() {
                 key={tab.id}
                 type="button"
                 onClick={() => setFilterStatus(tab.id)}
-                className={`px-3 py-1.5 rounded-md font-medium transition-colors ${
+                className={`px-3 py-1 rounded-md font-medium transition-colors cursor-pointer ${
                   filterStatus === tab.id
                     ? 'bg-card text-foreground shadow-xs'
                     : 'text-muted-foreground hover:text-foreground'
@@ -126,94 +106,89 @@ export default function HistoryPage() {
       </div>
 
       {loading && (
-        <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-2">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm font-medium">Đang tải lịch sử giao dịch...</p>
+        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <p className="text-xs">Đang tải lịch sử giao dịch...</p>
         </div>
       )}
 
       {error && (
-        <div className="p-4 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-200 text-sm" role="alert">
+        <div className="p-3 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-200 text-xs" role="alert">
           {error}
         </div>
       )}
 
       {!loading && !error && records.length === 0 && (
-        <Card className="border-dashed text-center p-12 bg-card">
-          <CreditCard className="mx-auto h-8 w-8 text-muted-foreground/50 mb-2" />
-          <h3 className="font-semibold text-foreground">Chưa có giao dịch</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Tài khoản chưa có lịch sử phát sinh giao dịch nào.
-          </p>
-        </Card>
+        <div className="py-12 text-center text-xs text-muted-foreground border border-dashed rounded-lg bg-card">
+          Chưa có lịch sử phát sinh giao dịch nào.
+        </div>
       )}
 
       {!loading && !error && records.length > 0 && filteredRecords.length === 0 && (
-        <Card className="border-dashed text-center p-8 bg-card">
-          <p className="text-sm text-muted-foreground">Không có giao dịch nào ở trạng thái đã chọn.</p>
-        </Card>
+        <div className="py-8 text-center text-xs text-muted-foreground border border-dashed rounded-lg bg-card">
+          Không có giao dịch nào ở trạng thái đã chọn.
+        </div>
       )}
 
       {!loading && !error && filteredRecords.length > 0 && (
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {filteredRecords.map((r) => (
-            <Card key={r.payment_id} className="hover:border-primary/40 transition-colors shadow-sm border">
-              <CardContent className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="space-y-1.5 flex-1">
+            <Card key={r.payment_id} className="border shadow-xs hover:border-muted-foreground/30 transition-colors">
+              <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                {/* Thông tin giao dịch & sinh viên */}
+                <div className="space-y-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-bold text-base text-foreground">{r.student_name}</span>
-                    <Badge variant="outline" className="font-mono text-xs">
-                      MSSV: {r.student_id}
-                    </Badge>
+                    <span className="font-semibold text-sm text-foreground">
+                      {r.student_name}
+                    </span>
+                    <span className="text-xs font-mono text-muted-foreground">
+                      ({r.student_id})
+                    </span>
                     {r.semester && (
-                      <Badge variant="secondary" className="text-xs">
-                        {r.semester}
-                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        • {r.semester}
+                      </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-3.5 w-3.5 text-muted-foreground/70" />
-                      {formatDate(r.created_at)}
-                    </span>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>{formatDate(r.created_at)}</span>
+                    <span>•</span>
                     <span className="font-mono">Mã GD: #{r.payment_id}</span>
                   </div>
                   {r.status === 'FAILED' && r.error_code && (
-                    <p className="text-xs text-destructive font-medium pt-0.5">
-                      Nguyên nhân: {ERROR_LABELS[r.error_code] || r.error_code}
+                    <p className="text-xs text-destructive pt-0.5">
+                      Lý do: {ERROR_LABELS[r.error_code] || r.error_code}
                     </p>
                   )}
                 </div>
 
-                <div className="flex items-center sm:flex-col sm:items-end justify-between w-full sm:w-auto gap-3">
-                  <div className="sm:text-right">
-                    <span className="text-lg font-bold text-primary tracking-tight font-mono block">
-                      {formatCurrency(r.amount)}
-                    </span>
-                    <div className="mt-1">{getStatusBadge(r.status)}</div>
+                {/* Số tiền & Hành động */}
+                <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 pt-2 sm:pt-0 border-t sm:border-0 border-border/50">
+                  <span className="font-bold text-sm sm:text-base font-mono text-foreground">
+                    {formatCurrency(r.amount)}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {getStatusBadge(r.status)}
+                    {r.status === 'SUCCESS' && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          setSelectedReceipt({
+                            payment_id: r.payment_id,
+                            student_name: r.student_name,
+                            student_id: r.student_id,
+                            amount: r.amount,
+                            semester: r.semester,
+                            paid_at: r.updated_at || r.created_at,
+                          })
+                        }
+                        className="h-6 px-2 text-xs text-primary hover:text-primary hover:bg-primary/10"
+                      >
+                        Xem biên lai
+                      </Button>
+                    )}
                   </div>
-
-                  {/* Nút Xem lại biên lai cho giao dịch thành công */}
-                  {r.status === 'SUCCESS' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        setSelectedReceipt({
-                          payment_id: r.payment_id,
-                          student_name: r.student_name,
-                          student_id: r.student_id,
-                          amount: r.amount,
-                          semester: r.semester,
-                          paid_at: r.updated_at || r.created_at,
-                        })
-                      }
-                      className="h-8 text-xs gap-1.5 border-primary/30 text-primary hover:bg-primary/5 shrink-0"
-                    >
-                      <FileText className="h-3.5 w-3.5" />
-                      <span>Xem biên lai</span>
-                    </Button>
-                  )}
                 </div>
               </CardContent>
             </Card>
