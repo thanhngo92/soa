@@ -1,21 +1,44 @@
 import logging
 import httpx
 from app.config.env import settings
+from app.utils.error_util import AppError
 
 logger = logging.getLogger("notification_client")
 
 
-async def send_otp(http: httpx.AsyncClient, payment_id: str, email: str) -> None:
+async def send_otp(
+    http: httpx.AsyncClient,
+    payment_id: str,
+    email: str,
+    student_id: str | None = None,
+    student_name: str | None = None,
+    amount: float | None = None,
+) -> None:
     """Dispatches request to generate and email OTP for a pending payment."""
+    payload: dict = {"payment_id": payment_id, "email": email}
+    if student_id:
+        payload["student_id"] = student_id
+    if student_name:
+        payload["student_name"] = student_name
+    if amount is not None:
+        payload["amount"] = amount
+
     try:
-        await http.post(
+        r = await http.post(
             f"{settings.NOTIFICATION_SERVICE_URL}/api/notifications/otp/generate",
-            json={"payment_id": payment_id, "email": email},
+            json=payload,
             headers={"X-Internal-Token": settings.INTERNAL_SERVICE_KEY},
             timeout=10.0,
         )
+        data = r.json()
+        if r.status_code != 200 or not data.get("success"):
+            err_msg = data.get("error", {}).get("message", "Failed to generate and send OTP")
+            raise AppError("OTP_SEND_FAILED", err_msg, r.status_code if r.status_code >= 400 else 500)
+    except AppError:
+        raise
     except Exception as exc:
         logger.error(f"Failed to request OTP from notification-service: {exc}")
+        raise AppError("SERVICE_UNAVAILABLE", "Notification service is currently unavailable", 503)
 
 
 async def verify_otp(http: httpx.AsyncClient, payment_id: str, otp_code: str) -> dict:

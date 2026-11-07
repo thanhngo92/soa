@@ -24,7 +24,6 @@ register_cors_middleware(app)
 app.add_middleware(RequestLoggingMiddleware)
 
 
-# Endpoint noi bo giua cac service, khong cong khai qua gateway
 BLOCKED_EXTERNAL_ROUTES = {
     ("POST", "tuitions", "pay"),
     ("POST", "tuitions", "revert"),
@@ -46,8 +45,6 @@ async def proxy(service: str, request: Request, path: str = ""):
             media_type="application/json",
         )
 
-    # Chan truy cap truc tiep vao endpoint noi bo tu client ben ngoai.
-    # Cac service goi nhau truc tiep trong mang Docker, khong di qua gateway.
     norm_path = path.strip("/").lower()
     route_key = (request.method.upper(), service.lower(), norm_path)
     if route_key in BLOCKED_EXTERNAL_ROUTES:
@@ -59,7 +56,6 @@ async def proxy(service: str, request: Request, path: str = ""):
 
     target_url = f"{SERVICE_MAP[service]}/api/{service}/{path}" if path else f"{SERVICE_MAP[service]}/api/{service}"
 
-    # Xu ly Idempotency-Key cho cac request lam thay doi du lieu (POST, PUT, PATCH, DELETE)
     idempotency_key = request.headers.get("idempotency-key") or request.headers.get("x-idempotency-key")
     if idempotency_key and request.method.upper() in {"POST", "PUT", "PATCH", "DELETE"}:
         auth_header = request.headers.get("authorization", "")
@@ -79,7 +75,6 @@ async def proxy(service: str, request: Request, path: str = ""):
             )
 
         if not is_new:
-            # Neu request dang duoc xu ly boi luong khac, doi toi da 5 giay
             if record.status == "IN_PROGRESS":
                 try:
                     await asyncio.wait_for(record.event.wait(), timeout=5.0)
@@ -90,7 +85,7 @@ async def proxy(service: str, request: Request, path: str = ""):
                         media_type="application/json",
                     )
 
-            if record.status == "COMPLETED":
+            if record.status in ("COMPLETED", "RELEASED") and record.response_content:
                 return Response(
                     content=record.response_content,
                     status_code=record.status_code,
@@ -103,7 +98,7 @@ async def proxy(service: str, request: Request, path: str = ""):
 
         try:
             response = await forward_request(request.app.state.http, target_url, request)
-            if response.status_code < 500:
+            if 200 <= response.status_code < 300:
                 await idempotency_store.save_completed(
                     composite_key,
                     response.status_code,
@@ -111,17 +106,39 @@ async def proxy(service: str, request: Request, path: str = ""):
                     response.media_type or "application/json",
                 )
             else:
-                await idempotency_store.remove(composite_key)
+                await idempotency_store.release_failed(
+                    composite_key,
+                    response.status_code,
+                    response.body,
+                    response.media_type or "application/json",
+                )
 
             response.headers["X-Idempotent-Replay"] = "false"
             return response
         except Exception:
-            await idempotency_store.remove(composite_key)
+            await idempotency_store.release_failed(composite_key)
             raise
 
     return await forward_request(request.app.state.http, target_url, request)
 
 
 @app.get("/health")
-async def health():
-    return {"status": "ok", "service": "api-gateway"}
+async def health(request: Request):
+    http: httpx.AsyncClient = request.app.state.http
+    services_status = {}
+
+    async def _probe(name: str, base_url: str):
+        try:
+            r = await http.get(f"{base_url}/health", timeout=2.0)
+            services_status[name] = "ok" if r.status_code == 200 else "degraded"
+        except Exception:
+            services_status[name] = "down"
+
+    await asyncio.gather(*(_probe(k, v) for k, v in SERVICE_MAP.items()))
+    all_ok = all(v == "ok" for v in services_status.values())
+    return {
+        "status": "ok" if all_ok else "degraded",
+        "service": "api-gateway",
+        "gateway": "ok",
+        "services": services_status,
+    }

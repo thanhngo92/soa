@@ -14,66 +14,67 @@ async def create_otp(payment_id: str, otp_code: str, email: str) -> None:
 
 
 async def verify_and_consume_otp(payment_id: str, otp_code: str) -> dict:
-    """
-    Xác thực và đánh dấu đã sử dụng mã OTP.
-    Tuân thủ đúng quy định đề bài:
-      - Tối đa 3 lần thử
-      - Hạn 5 phút
-      - Báo lỗi cụ thể khi quá 3 lần, hết hạn hoặc sai mã.
-    """
     pool = get_pool()
     async with pool.acquire() as conn:
-        async with conn.cursor(aiomysql.DictCursor) as cur:
-            await cur.execute(
-                "SELECT id, otp_code, email, expires_at, is_used, attempts, "
-                "(expires_at >= NOW()) AS is_valid_time "
-                "FROM otps WHERE payment_id = %s ORDER BY id DESC LIMIT 1",
-                (payment_id,),
-            )
-            record = await cur.fetchone()
-            if not record:
-                return {"status": "NOT_FOUND"}
-
-            # Đã bị khóa do vượt quá 3 lần thử
-            if record["attempts"] >= 3:
-                await cur.execute("UPDATE otps SET is_used = TRUE WHERE id = %s", (record["id"],))
-                return {"status": "MAX_ATTEMPTS", "attempts": record["attempts"]}
-
-            # Đã hết hạn 5 phút
-            if not record["is_valid_time"]:
-                return {"status": "EXPIRED"}
-
-            # Đã qua sử dụng
-            if record["is_used"]:
-                return {"status": "ALREADY_USED"}
-
-            # Khớp mã OTP -> Xác thực thành công & Đánh dấu tiêu thụ
-            if record["otp_code"] == otp_code:
+        await conn.begin()
+        try:
+            async with conn.cursor(aiomysql.DictCursor) as cur:
                 await cur.execute(
-                    "UPDATE otps SET is_used = TRUE WHERE id = %s AND is_used = FALSE",
-                    (record["id"],),
+                    "SELECT id, otp_code, email, expires_at, is_used, attempts, "
+                    "(expires_at >= NOW()) AS is_valid_time "
+                    "FROM otps WHERE payment_id = %s ORDER BY id DESC LIMIT 1 FOR UPDATE",
+                    (payment_id,),
                 )
-                return {"status": "SUCCESS"}
+                record = await cur.fetchone()
+                if not record:
+                    await conn.rollback()
+                    return {"status": "NOT_FOUND"}
 
-            # Mã OTP sai -> Ghi nhận thêm 1 lần thử sai
-            new_attempts = record["attempts"] + 1
-            if new_attempts >= 3:
-                # Đã sai đủ 3 lần -> Khóa mã OTP
+                if record["attempts"] >= 3:
+                    if not record["is_used"]:
+                        await cur.execute("UPDATE otps SET is_used = TRUE WHERE id = %s", (record["id"],))
+                    await conn.commit()
+                    return {"status": "MAX_ATTEMPTS", "attempts": record["attempts"]}
+
+                if record["is_used"]:
+                    await conn.commit()
+                    return {"status": "ALREADY_USED"}
+
+                if not record["is_valid_time"]:
+                    await cur.execute("UPDATE otps SET is_used = TRUE WHERE id = %s AND is_used = FALSE", (record["id"],))
+                    await conn.commit()
+                    return {"status": "EXPIRED"}
+
+                if record["otp_code"] == otp_code:
+                    await cur.execute(
+                        "UPDATE otps SET is_used = TRUE "
+                        "WHERE id = %s AND is_used = FALSE AND attempts < 3 AND expires_at >= NOW()",
+                        (record["id"],),
+                    )
+                    if cur.rowcount == 0:
+                        await conn.rollback()
+                        return {"status": "ALREADY_USED"}
+                    await conn.commit()
+                    return {"status": "SUCCESS"}
+
+                new_attempts = int(record["attempts"]) + 1
+                mark_used = new_attempts >= 3
                 await cur.execute(
-                    "UPDATE otps SET attempts = %s, is_used = TRUE WHERE id = %s",
-                    (new_attempts, record["id"]),
+                    "UPDATE otps SET attempts = attempts + 1, is_used = IF(%s, TRUE, is_used) WHERE id = %s",
+                    (mark_used, record["id"]),
                 )
-                return {"status": "MAX_ATTEMPTS", "attempts": new_attempts}
-            else:
-                await cur.execute(
-                    "UPDATE otps SET attempts = %s WHERE id = %s",
-                    (new_attempts, record["id"]),
-                )
+                await conn.commit()
+
+                if new_attempts >= 3:
+                    return {"status": "MAX_ATTEMPTS", "attempts": new_attempts}
                 return {
                     "status": "WRONG_CODE",
                     "attempts": new_attempts,
                     "remaining": 3 - new_attempts,
                 }
+        except Exception:
+            await conn.rollback()
+            raise
 
 
 async def invalidate_otps(payment_id: str) -> None:
@@ -87,7 +88,6 @@ async def invalidate_otps(payment_id: str) -> None:
 
 
 async def is_otp_active(otp_code: str) -> bool:
-    """Kiem tra ma OTP co dang co hieu luc (chua dung va chua het han) trong he thong hay khong."""
     pool = get_pool()
     async with pool.acquire() as conn:
         async with conn.cursor() as cur:

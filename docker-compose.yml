@@ -1,19 +1,5 @@
-# ─────────────────────────────────────────────────────────────────────────────
-# Network ports summary:
-#   Frontend      : 3000  →  http://localhost:3000
-#   API Gateway   : 8877  →  http://localhost:8877/health
-#   account-svc   : 8661
-#   tuition-svc   : 8732
-#   payment-svc   : 8815
-#   notification  : 8940
-#   MySQL 8.0     : 8552  (Unified RDBMS on custom port 8552)
-#   Mailpit SMTP  : 1025
-#   Mailpit Web   : 8025  →  http://localhost:8025
-# ─────────────────────────────────────────────────────────────────────────────
-
 services:
 
-  # ── Infrastructure ──────────────────────────────────────────────────────────
   mysql:
     image: mysql:8.0
     container_name: soa-mysql
@@ -42,7 +28,6 @@ services:
     networks:
       - soa-net
 
-  # ── Backend Microservices ────────
   account-service:
     build:
       context: ./backend/account-service
@@ -146,7 +131,6 @@ services:
     networks:
       - soa-net
 
-  # ── API Gateway ──────────────────────────────────────────────────────────────
   api-gateway:
     build:
       context: ./api-gateway
@@ -170,7 +154,6 @@ services:
     networks:
       - soa-net
 
-  # ── Frontend Web Application ────────────────────────────────────────────────
   frontend:
     build:
       context: ./frontend

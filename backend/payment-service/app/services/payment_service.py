@@ -7,6 +7,7 @@ from app.repositories.payment_repository import (
     create_payment,
     find_by_account,
     find_by_id,
+    supersede_pending_payments,
     transition_status,
 )
 from app.utils.error_util import AppError
@@ -14,13 +15,23 @@ from app.utils.error_util import AppError
 logger = logging.getLogger("payment_service")
 
 
-async def initiate(request: Request, user: dict, student_id: str) -> dict:
-    """Khoi tao giao dich thanh toan hoc phi va gui OTP xac thuc."""
-    http = request.app.state.http
-    user_id = user["sub"]
-    user_email = user["email"]
+def _format_utc_iso(dt_val) -> str | None:
+    if dt_val is None:
+        return None
+    if isinstance(dt_val, datetime):
+        if dt_val.tzinfo is None:
+            dt_val = dt_val.replace(tzinfo=timezone.utc)
+        return dt_val.isoformat()
+    return str(dt_val)
 
-    tuition = await tuition_client.get_tuition(http, student_id)
+
+async def initiate(request: Request, user: dict, student_id: str) -> dict:
+    http = request.app.state.http
+    user_id = str(user["sub"])
+    user_email = user["email"]
+    cleaned_student_id = (student_id or "").strip().upper()
+
+    tuition = await tuition_client.get_tuition(http, cleaned_student_id)
     if tuition["status"] == "PAID":
         raise AppError("TUITION_ALREADY_PAID", "Tuition has already been paid", 409)
 
@@ -33,19 +44,32 @@ async def initiate(request: Request, user: dict, student_id: str) -> dict:
     if balance < amount:
         raise AppError("INSUFFICIENT_BALANCE", "Insufficient balance", 400)
 
+    await supersede_pending_payments(user_id, cleaned_student_id)
+
     payment_id = await create_payment({
         "account_id": user_id,
         "email": user_email,
-        "student_id": student_id,
+        "student_id": cleaned_student_id,
         "student_name": student_name,
         "amount": amount,
         "status": "PENDING",
         "semester": semester,
     })
 
-    # Gui OTP qua email nguoi dung
-    await notification_client.send_otp(http, payment_id, user_email)
-    logger.info(f"Initiated payment #{payment_id} for student {student_id} ({amount:,.0f} VND)")
+    try:
+        await notification_client.send_otp(
+            http=http,
+            payment_id=payment_id,
+            email=user_email,
+            student_id=cleaned_student_id,
+            student_name=student_name,
+            amount=amount,
+        )
+    except Exception:
+        await transition_status(payment_id, "PENDING", "FAILED", "OTP_SEND_FAILED")
+        raise
+
+    logger.info(f"Initiated payment #{payment_id} for student {cleaned_student_id} ({amount:,.0f} VND)")
 
     return {
         "payment_id": payment_id,
@@ -55,79 +79,71 @@ async def initiate(request: Request, user: dict, student_id: str) -> dict:
 
 
 async def confirm(request: Request, user: dict, payment_id: str, otp_code: str) -> dict:
-    """Xac nhan OTP va dieu phoi quy trinh thanh toan Saga."""
     http = request.app.state.http
     token = request.headers.get("authorization", "").replace("Bearer ", "")
-    user_id = user["sub"]
+    user_id = str(user["sub"])
     user_email = user["email"]
 
     payment = await find_by_id(payment_id)
     if not payment:
         raise AppError("PAYMENT_NOT_FOUND", "Payment not found", 404)
+    if str(payment["account_id"]) != user_id:
+        raise AppError("FORBIDDEN", "Forbidden: Not authorized for this payment", 403)
     if payment["status"] != "PENDING":
         raise AppError("PAYMENT_NOT_PENDING", "Payment is not in pending state", 400)
-    if payment["account_id"] != user_id:
-        raise AppError("FORBIDDEN", "Forbidden: Not authorized for this payment", 403)
 
-    amount = payment["amount"]
+    amount = float(payment["amount"])
     student_id = payment["student_id"]
     student_name = payment["student_name"]
     semester = payment.get("semester")
 
-    # 1. Xac thuc ma OTP
     otp_res = await notification_client.verify_otp(http, payment_id, otp_code)
     if not otp_res.get("success"):
+        err_code = otp_res.get("code", "INVALID_OTP")
+        if err_code in ("OTP_MAX_ATTEMPTS_EXCEEDED", "OTP_EXPIRED"):
+            await transition_status(payment_id, "PENDING", "FAILED", err_code)
         raise AppError(
-            otp_res.get("code", "INVALID_OTP"),
+            err_code,
             otp_res.get("message", "Mã OTP không chính xác, đã hết hạn hoặc quá số lần thử."),
             400,
         )
 
-    # 2. Khoa trang thai FSM: PENDING -> PROCESSING
     transitioned = await transition_status(payment_id, "PENDING", "PROCESSING")
     if not transitioned:
         raise AppError("PAYMENT_NOT_PENDING", "Payment transaction is already being processed", 400)
 
-    # 3. Kiem tra lai tinh hop le cua giao dich va so du kha dung truoc khi trích nợ
-    balance = await account_client.get_balance(http, token)
-    if balance < amount:
-        logger.warning(f"Re-check balance failed for payment #{payment_id}: balance={balance:,.0f} < amount={amount:,.0f}")
-        await transition_status(payment_id, "PROCESSING", "FAILED", "INSUFFICIENT_BALANCE")
-        raise AppError("INSUFFICIENT_BALANCE", "Insufficient balance", 400)
-
-    # 4. Buoc 1 Saga: Tru tien tai khoan (Atomic Row-Locking)
     try:
-        await account_client.deduct(http, token, amount, payment_id)
+        await account_client.deduct(http, token, amount, payment_id, account_id=user_id)
     except Exception as deduct_err:
-        logger.warning(f"Deduct failed for payment #{payment_id}: {deduct_err}")
-        await transition_status(payment_id, "PROCESSING", "FAILED", "DEDUCT_FAILED")
+        err_code = deduct_err.detail.get("code", "DEDUCT_FAILED") if isinstance(deduct_err, AppError) else "DEDUCT_FAILED"
+        logger.warning(f"Deduct failed for payment #{payment_id} ({err_code}): {deduct_err}")
+        await transition_status(payment_id, "PROCESSING", "FAILED", err_code)
         raise
 
-    # 4. Buoc 2 Saga: Gach no hoc phi sinh vien
     try:
-        await tuition_client.pay(http, student_id, user_id, payment_id, semester)
+        tuition_res = await tuition_client.pay(http, student_id, user_id, payment_id, semester)
     except Exception as exc:
-        # Gach no loi: kich hoat giao dich bu tru hoan lai tien cho nguoi dung
         logger.error(f"Tuition pay failed for payment #{payment_id}: {exc}. Triggering refund compensation.")
         refund_ok = False
         try:
-            refund_ok = await account_client.refund(http, token, amount, payment_id)
+            refund_ok = await account_client.refund(http, token, amount, payment_id, account_id=user_id)
         except Exception as refund_err:
-            logger.critical(f"Critical: refund compensation failed for payment #{payment_id}: {refund_err}")
+            logger.critical(f"Refund compensation failed for payment #{payment_id}: {refund_err}")
 
         error_code = "TUITION_MARK_FAILED" if refund_ok else "COMPENSATION_REFUND_PENDING"
         await transition_status(payment_id, "PROCESSING", "FAILED", error_code)
 
-        if isinstance(exc, AppError):
+        if isinstance(exc, AppError) and exc.status_code == 409:
             raise AppError("PAYMENT_FAILED", "Payment failed: tuition already paid by another transaction", 409)
+        if isinstance(exc, AppError):
+            msg = exc.detail.get("message", "Downstream tuition service error")
+            raise AppError("PAYMENT_FAILED", f"Payment failed: {msg}", exc.status_code)
         raise AppError("PAYMENT_FAILED", f"Payment failed: {str(exc)}", 500)
 
-    # 5. Hoan tat giao dich thanh cong
     await transition_status(payment_id, "PROCESSING", "SUCCESS")
-    paid_at = datetime.now(timezone.utc).isoformat()
+    paid_at = (tuition_res or {}).get("paid_at") or datetime.now(timezone.utc).isoformat()
     logger.info(f"Payment #{payment_id} completed successfully")
 
-    # Gui email bien nhan
     await notification_client.send_success_email(http, {
         "email": user_email,
         "payment_id": payment_id,
@@ -143,19 +159,21 @@ async def confirm(request: Request, user: dict, payment_id: str, otp_code: str) 
         "amount": amount,
         "student_id": student_id,
         "student_name": student_name,
+        "semester": semester,
         "paid_at": paid_at,
     }
 
 
 async def history(account_id: str) -> list:
-    """Lay danh sach lich su giao dich thanh toan cua tai khoan."""
     records = await find_by_account(account_id)
     return [{
         "payment_id": str(r["id"]),
         "student_id": r["student_id"],
         "student_name": r["student_name"],
+        "semester": r.get("semester"),
         "amount": r["amount"],
         "status": r["status"],
-        "created_at": r["created_at"].isoformat(),
-        "completed_at": r["completed_at"].isoformat() if r.get("completed_at") else None,
+        "error_code": r.get("error_code"),
+        "created_at": _format_utc_iso(r.get("created_at")),
+        "completed_at": _format_utc_iso(r.get("completed_at")),
     } for r in records]

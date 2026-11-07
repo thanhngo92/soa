@@ -1,9 +1,18 @@
 import { useState, useEffect } from 'react'
 import { getHistoryApi } from '@/services/paymentService'
 import { formatCurrency, formatDate } from '@/utils/formatters'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { History, CreditCard, Calendar, CheckCircle2, Clock, XCircle, Loader2 } from 'lucide-react'
+
+const ERROR_LABELS = {
+  INSUFFICIENT_BALANCE: 'Không đủ số dư khả dụng',
+  TUITION_MARK_FAILED: 'Học phí đã được thanh toán bởi giao dịch khác (Đã hoàn tiền)',
+  OTP_MAX_ATTEMPTS_EXCEEDED: 'Nhập sai mã OTP quá 3 lần',
+  OTP_EXPIRED: 'Mã OTP hết thời hạn 5 phút',
+  OTP_SEND_FAILED: 'Không gửi được email OTP',
+  SUPERSEDED: 'Đã hủy do tạo phiên thanh toán mới',
+}
 
 export default function HistoryPage() {
   const [records, setRecords] = useState([])
@@ -26,11 +35,18 @@ export default function HistoryPage() {
             THÀNH CÔNG
           </Badge>
         )
+      case 'PROCESSING':
+        return (
+          <Badge variant="warning" className="gap-1">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            ĐANG XỬ LÝ
+          </Badge>
+        )
       case 'PENDING':
         return (
           <Badge variant="warning" className="gap-1">
             <Clock className="h-3 w-3" />
-            ĐANG CHỜ
+            ĐANG CHỜ OTP
           </Badge>
         )
       case 'FAILED':
@@ -88,6 +104,11 @@ export default function HistoryPage() {
                     <Badge variant="outline" className="font-mono text-xs">
                       MSSV: {r.student_id}
                     </Badge>
+                    {r.semester && (
+                      <Badge variant="secondary" className="text-xs">
+                        {r.semester}
+                      </Badge>
+                    )}
                   </div>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
                     <span className="flex items-center gap-1">
@@ -96,6 +117,11 @@ export default function HistoryPage() {
                     </span>
                     <span className="font-mono">Mã GD: #{r.payment_id}</span>
                   </div>
+                  {r.status === 'FAILED' && r.error_code && (
+                    <p className="text-xs text-destructive font-medium">
+                      Lý do: {ERROR_LABELS[r.error_code] || r.error_code}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex items-center sm:flex-col sm:items-end justify-between w-full sm:w-auto gap-2">

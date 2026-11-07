@@ -12,7 +12,15 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { AlertCircle, ShieldCheck, Clock, Loader2 } from 'lucide-react'
 
-export default function OtpModal({ open = true, onConfirm, onCancel, loading, error, onClearError }) {
+export default function OtpModal({
+  open = true,
+  onConfirm,
+  onCancel,
+  loading,
+  error,
+  locked = false,
+  onClearError,
+}) {
   const [otp, setOtp] = useState('')
   const countdown = useCountdown(300)
 
@@ -47,10 +55,11 @@ export default function OtpModal({ open = true, onConfirm, onCancel, loading, er
               type="text"
               maxLength={6}
               autoFocus
+              disabled={loading || locked || !countdown.isActive}
               placeholder="000000"
               value={otp}
               onChange={(e) => {
-                if (error && onClearError) onClearError()
+                if (error && !locked && onClearError) onClearError()
                 setOtp(e.target.value.replace(/[^0-9]/g, ''))
               }}
               className="text-center text-3xl font-mono tracking-[0.5em] h-14 font-bold border-2 focus-visible:ring-primary"
@@ -62,18 +71,18 @@ export default function OtpModal({ open = true, onConfirm, onCancel, loading, er
               </div>
             )}
             <p className="text-center text-xs text-muted-foreground">
-              Mã xác thực gồm 6 chữ số đã được gửi đến email đăng ký của quý khách.
+              Mã xác thực gồm 6 chữ số đã được gửi đến email đăng ký của quý khách (tối đa 3 lần nhập).
             </p>
           </div>
 
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="outline" onClick={onCancel} className="flex-1" disabled={loading}>
-              Hủy
+              {locked ? 'Đóng' : 'Hủy'}
             </Button>
             <Button
               type="button"
               onClick={() => onConfirm(otp)}
-              disabled={!isValidOtp(otp) || loading || !countdown.isActive}
+              disabled={!isValidOtp(otp) || loading || locked || !countdown.isActive}
               className="flex-1"
             >
               {loading ? (

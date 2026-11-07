@@ -5,7 +5,7 @@ from app.config.env import settings
 _pool: aiomysql.Pool | None = None
 
 
-async def connect_db(retries: int = 15, delay: int = 2) -> None:
+async def connect_db(retries: int = 45, delay: int = 2) -> None:
     global _pool
     for attempt in range(1, retries + 1):
         try:

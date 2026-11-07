@@ -1,11 +1,11 @@
 from fastapi import Depends
 from app.schemas.tuition_schema import PayTuitionRequest, RevertTuitionRequest
 from app.services.tuition_service import get_tuition, pay_tuition, revert_tuition
-from app.middlewares.auth_middleware import verify_internal_token
+from app.middlewares.auth_middleware import verify_internal_token, verify_user_or_internal
 from app.utils.response_util import success
 
 
-async def get_student_controller(mssv: str):
+async def get_student_controller(mssv: str, _=Depends(verify_user_or_internal)):
     return success(await get_tuition(mssv))
 
 

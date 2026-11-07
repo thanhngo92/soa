@@ -2,6 +2,17 @@ import aiomysql
 from app.config.database import get_pool
 
 
+async def supersede_pending_payments(account_id: str, student_id: str) -> None:
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(
+                "UPDATE payments SET status = 'FAILED', error_code = 'SUPERSEDED', completed_at = NOW() "
+                "WHERE account_id = %s AND student_id = %s AND status = 'PENDING'",
+                (account_id, student_id),
+            )
+
+
 async def create_payment(data: dict) -> str:
     pool = get_pool()
     async with pool.acquire() as conn:
@@ -40,10 +51,6 @@ async def transition_status(
     to_status: str,
     error_code: str | None = None,
 ) -> bool:
-    """Atomic state transition in payment workflow state machine.
-    Enforces valid state transition from `from_status` to `to_status`.
-    Returns True if transitioned successfully, False if condition was not met (preventing race conditions).
-    """
     pool = get_pool()
     async with pool.acquire() as conn:
         async with conn.cursor() as cur:
@@ -65,7 +72,12 @@ async def find_by_account(account_id: str) -> list[dict]:
     async with pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
             await cur.execute(
-                "SELECT * FROM payments WHERE account_id = %s ORDER BY created_at DESC LIMIT 100",
+                "UPDATE payments SET status = 'FAILED', error_code = 'OTP_EXPIRED', completed_at = NOW() "
+                "WHERE account_id = %s AND status = 'PENDING' AND created_at < DATE_SUB(NOW(), INTERVAL 5 MINUTE)",
+                (account_id,),
+            )
+            await cur.execute(
+                "SELECT * FROM payments WHERE account_id = %s ORDER BY created_at DESC, id DESC LIMIT 100",
                 (account_id,),
             )
             rows = await cur.fetchall()

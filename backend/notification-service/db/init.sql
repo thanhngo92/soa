@@ -1,7 +1,4 @@
--- =============================================================================
--- Notification Service Database Initialization (Member 2)
--- Database: notification_db
--- =============================================================================
+-- Notification Service Database Schema (notification_db)
 
 CREATE DATABASE IF NOT EXISTS notification_db
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

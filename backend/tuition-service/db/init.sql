@@ -1,7 +1,4 @@
--- =============================================================================
--- Tuition Service Database Initialization (Member 2)
--- Database: tuition_db
--- =============================================================================
+-- Tuition Service Database Schema (tuition_db)
 
 CREATE DATABASE IF NOT EXISTS tuition_db
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

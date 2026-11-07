@@ -5,6 +5,7 @@ from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 from app.config.env import settings
 
 _bearer = HTTPBearer()
+_optional_bearer = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(_bearer)) -> dict:
@@ -23,3 +24,25 @@ async def verify_internal_token(x_internal_token: str = Header(None, alias="X-In
             detail={"code": "FORBIDDEN_INTERNAL_ONLY", "message": "Access denied: Internal service operation only."},
         )
 
+
+async def verify_user_or_internal(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_optional_bearer),
+    x_internal_token: str | None = Header(None, alias="X-Internal-Token"),
+) -> dict:
+    """
+    Allows access to authenticated iBanking users (valid Bearer JWT)
+    OR internal microservices presenting a valid X-Internal-Token.
+    """
+    if x_internal_token and x_internal_token == settings.INTERNAL_SERVICE_KEY:
+        return {"role": "internal"}
+    if not credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"code": "UNAUTHORIZED", "message": "Authentication required to query student tuition."},
+        )
+    try:
+        return jwt.decode(credentials.credentials, settings.JWT_SECRET, algorithms=["HS256"])
+    except ExpiredSignatureError:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail={"code": "TOKEN_EXPIRED", "message": "Token has expired"})
+    except InvalidTokenError:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail={"code": "INVALID_TOKEN", "message": "Invalid token"})

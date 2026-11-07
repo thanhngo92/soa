@@ -1,3 +1,5 @@
+import asyncio
+from datetime import datetime, timezone, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import logging
@@ -14,38 +16,51 @@ from app.repositories.notification_repository import (
 from app.utils.error_util import AppError
 
 logger = logging.getLogger("notification_service")
+_VN_TZ = timezone(timedelta(hours=7))
 
 
-def _send(to: str, subject: str, body: str) -> None:
-    """Dispatches plain text email through configured SMTP server (Mailpit)."""
+def _format_vn_time(iso_str: str) -> str:
     try:
-        msg = MIMEMultipart()
-        msg["From"] = settings.MAIL_FROM
-        msg["To"] = to
-        msg["Subject"] = subject
-        msg.attach(MIMEText(body, "plain", "utf-8"))
+        dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(_VN_TZ).strftime("%H:%M:%S %d/%m/%Y (GMT+7)")
+    except Exception:
+        return iso_str
 
-        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as s:
-            s.sendmail(settings.MAIL_FROM, to, msg.as_string())
-        logger.info(f"Email sent successfully to '{to}' with subject '{subject}'")
+
+def _send_sync(to: str, subject: str, body: str) -> None:
+    msg = MIMEMultipart()
+    msg["From"] = settings.MAIL_FROM
+    msg["To"] = to
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body, "plain", "utf-8"))
+
+    with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as s:
+        s.sendmail(settings.MAIL_FROM, to, msg.as_string())
+    logger.info(f"Email sent to '{to}' with subject '{subject}'")
+
+
+async def _send(to: str, subject: str, body: str, raise_on_error: bool = False) -> None:
+    try:
+        await asyncio.to_thread(_send_sync, to, subject, body)
     except Exception as exc:
         logger.error(f"Failed to send email to '{to}': {exc}")
+        if raise_on_error:
+            raise AppError("MAIL_DELIVERY_ERROR", "Không thể gửi email xác thực OTP", 500)
 
 
-async def generate_otp(payment_id: str, email: str) -> None:
-    """
-    Generates a secure 6-digit OTP code with 5-minute lifespan.
-    Guarantees:
-      - Bound to specific payment_id
-      - Does not collide with any currently active OTP of another transaction
-      - Max validity 5 minutes
-      - Single-use consumption
-    """
+async def generate_otp(
+    payment_id: str,
+    email: str,
+    student_id: str | None = None,
+    student_name: str | None = None,
+    amount: float | None = None,
+) -> None:
     await invalidate_otps(payment_id)
 
-    # Đảm bảo mã OTP không trùng với bất kỳ OTP nào đang có hiệu lực trong hệ thống
     otp_code = None
-    for _ in range(10):
+    for _ in range(20):
         candidate = f"{secrets.randbelow(1000000):06d}"
         if not await is_otp_active(candidate):
             otp_code = candidate
@@ -55,38 +70,42 @@ async def generate_otp(payment_id: str, email: str) -> None:
         otp_code = f"{secrets.randbelow(1000000):06d}"
 
     await create_otp(payment_id, otp_code, email)
-    logger.info(f"Generated unique OTP for payment_id={payment_id} -> {email} (valid 5 minutes)")
+    logger.info(f"Generated OTP for payment_id={payment_id} -> {email}")
+
+    tx_info_lines = [f"Mã giao dịch  : #{payment_id}"]
+    if student_name and student_id:
+        tx_info_lines.append(f"Sinh viên     : {student_name} (MSSV: {student_id})")
+    elif student_id:
+        tx_info_lines.append(f"Mã sinh viên  : {student_id}")
+    if amount is not None:
+        tx_info_lines.append(f"Số tiền       : {amount:,.0f} VND")
+    tx_info_str = "\n".join(tx_info_lines)
 
     body = (
         f"Kính gửi Quý khách,\n\n"
-        f"Mã OTP xác thực thanh toán học phí của bạn là: {otp_code}\n\n"
-        f"Thời hạn hiệu lực: 5 phút kể từ thời điểm nhận email.\n"
+        f"Mã OTP xác thực giao dịch thanh toán học phí của bạn là: {otp_code}\n\n"
+        f"--- THÔNG TIN GIAO DỊCH ---\n"
+        f"{tx_info_str}\n"
+        f"---------------------------\n\n"
+        f"Thời hạn hiệu lực: 5 phút kể từ thời điểm nhận email (tối đa 3 lần nhập).\n"
         f"Vì lý do an toàn, tuyệt đối không chia sẻ mã này cho bất kỳ ai.\n\n"
         f"Trân trọng,\n"
         f"Hệ thống Ngân hàng điện tử iBanking"
     )
-    _send(email, "Mã xác thực giao dịch OTP - iBanking", body)
+    await _send(email, f"Mã xác thực giao dịch OTP #{payment_id} - iBanking", body, raise_on_error=True)
 
 
 async def verify_otp(payment_id: str, otp_code: str) -> None:
-    """
-    Verifies OTP and marks it consumed in a single atomic SQL transaction.
-    Enforces:
-      - Max 3 verification attempts
-      - Expiration within 5 minutes
-      - Single-use consumption
-      - Informative error reporting as required by rubric
-    """
     logger.info(f"Verifying OTP for payment_id={payment_id}")
     result = await verify_and_consume_otp(payment_id, otp_code)
     status = result.get("status") if result else "NOT_FOUND"
 
     if status == "SUCCESS":
-        logger.info(f"OTP verified and consumed successfully for payment_id={payment_id}")
+        logger.info(f"OTP verified for payment_id={payment_id}")
         return
 
     if status == "MAX_ATTEMPTS":
-        logger.warning(f"OTP verification failed for payment_id={payment_id}: max attempts exceeded (3 times)")
+        logger.warning(f"OTP verification failed for payment_id={payment_id}: max attempts exceeded")
         raise AppError("OTP_MAX_ATTEMPTS_EXCEEDED", "Bạn đã nhập sai mã OTP quá 3 lần. Giao dịch đã bị khóa.", 400)
 
     if status == "EXPIRED":
@@ -99,7 +118,7 @@ async def verify_otp(payment_id: str, otp_code: str) -> None:
 
     if status == "WRONG_CODE":
         remaining = result.get("remaining", 0)
-        logger.warning(f"OTP verification failed for payment_id={payment_id}: wrong code. Remaining attempts: {remaining}")
+        logger.warning(f"OTP verification failed for payment_id={payment_id}: wrong code (remaining={remaining})")
         raise AppError("INVALID_OTP", f"Mã OTP không chính xác. Bạn còn {remaining} lần thử.", 400)
 
     raise AppError("INVALID_OTP", "Mã OTP không hợp lệ hoặc không tồn tại.", 400)
@@ -113,18 +132,18 @@ async def send_success_email(
     amount: float,
     paid_at: str,
 ) -> None:
-    """Sends detailed payment receipt email to payer upon successful transaction."""
-    logger.info(f"Dispatching payment receipt email to '{email}' for payment_id={payment_id}")
+    logger.info(f"Sending payment receipt email to '{email}' for payment_id={payment_id}")
+    formatted_time = _format_vn_time(paid_at)
     body = (
         f"Kính gửi Quý khách,\n\n"
         f"Giao dịch thanh toán học phí của bạn đã THÀNH CÔNG.\n\n"
-        f"================= THÔNG TIN BIÊN NHẬN =================\n"
-        f"Mã giao dịch  : {payment_id}\n"
+        f"--- THÔNG TIN BIÊN NHẬN ---\n"
+        f"Mã giao dịch  : #{payment_id}\n"
         f"Sinh viên     : {student_name} (MSSV: {student_id})\n"
         f"Số tiền đã thu: {amount:,.0f} VND\n"
-        f"Thời gian     : {paid_at}\n"
+        f"Thời gian     : {formatted_time}\n"
         f"Trạng thái    : THÀNH CÔNG (ĐÃ GẠCH NỢ)\n"
-        f"=======================================================\n\n"
+        f"---------------------------\n\n"
         f"Cảm ơn bạn đã sử dụng dịch vụ của iBanking!\n"
     )
-    _send(email, f"Xác nhận thanh toán học phí thành công #{payment_id}", body)
+    await _send(email, f"Xác nhận thanh toán học phí thành công #{payment_id}", body, raise_on_error=False)

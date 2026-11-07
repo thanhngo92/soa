@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { getTuitionApi } from '@/services/tuitionService'
 import { initiatePaymentApi, confirmPaymentApi } from '@/services/paymentService'
 import useAuth from '@/hooks/useAuth'
@@ -24,6 +24,17 @@ import {
   ShieldCheck
 } from 'lucide-react'
 
+const generateIdempotencyKey = (paymentId) =>
+  typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `pay-${paymentId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+
+const TERMINAL_OTP_CODES = new Set([
+  'OTP_MAX_ATTEMPTS_EXCEEDED',
+  'OTP_EXPIRED',
+  'PAYMENT_NOT_PENDING',
+])
+
 export default function TuitionPaymentPage() {
   const { user: authUser, refreshProfile } = useAuth()
   const profile = (authUser && authUser.balance !== undefined) ? authUser : null
@@ -34,40 +45,49 @@ export default function TuitionPaymentPage() {
   const [idempotencyKey, setIdempotencyKey] = useState('')
   const [receipt, setReceipt] = useState(null)
   const [showOtp, setShowOtp] = useState(false)
+  const [otpLocked, setOtpLocked] = useState(false)
   const [agreedTerms, setAgreedTerms] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState('otp_email')
   const [error, setError] = useState('')
   const [otpError, setOtpError] = useState('')
   const [searchLoading, setSearchLoading] = useState(false)
   const [payLoading, setPayLoading] = useState(false)
+  const searchSeqRef = useRef(0)
 
   const executeSearch = async (studentId) => {
     const trimmedMssv = studentId.trim().toUpperCase()
     if (!isValidMssv(trimmedMssv)) {
       return
     }
+    const seq = ++searchSeqRef.current
     setError('')
     setOtpError('')
+    setOtpLocked(false)
     setTuition(null)
     setAgreedTerms(false)
     setSearchLoading(true)
     try {
       const res = await getTuitionApi(trimmedMssv)
-      setTuition(res.data.data)
+      if (seq === searchSeqRef.current) {
+        setTuition(res.data.data)
+      }
     } catch (err) {
-      setError(err.response?.data?.error?.message || 'Không tìm thấy thông tin sinh viên hoặc học phí')
+      if (seq === searchSeqRef.current) {
+        setError(err.response?.data?.error?.message || 'Không tìm thấy thông tin sinh viên hoặc học phí')
+      }
     } finally {
-      setSearchLoading(false)
+      if (seq === searchSeqRef.current) {
+        setSearchLoading(false)
+      }
     }
   }
 
-  // Tự động tra cứu khi người dùng nhập MSSV đúng chuẩn (theo quy định đề bài)
   useEffect(() => {
     const trimmed = mssv.trim().toUpperCase()
-    if (isValidMssv(trimmed) && trimmed.length >= 8) {
+    if (isValidMssv(trimmed)) {
       const timer = setTimeout(() => {
         executeSearch(trimmed)
-      }, 500)
+      }, 450)
       return () => clearTimeout(timer)
     }
   }, [mssv])
@@ -85,14 +105,13 @@ export default function TuitionPaymentPage() {
   const handleInitiate = async () => {
     setError('')
     setOtpError('')
+    setOtpLocked(false)
     setPayLoading(true)
     try {
       const res = await initiatePaymentApi(tuition.student_id)
-      setPaymentId(res.data.data.payment_id)
-      const key = typeof crypto !== 'undefined' && crypto.randomUUID
-        ? crypto.randomUUID()
-        : `pay-${res.data.data.payment_id}-${Date.now()}`
-      setIdempotencyKey(key)
+      const newPaymentId = res.data.data.payment_id
+      setPaymentId(newPaymentId)
+      setIdempotencyKey(generateIdempotencyKey(newPaymentId))
       setShowOtp(true)
     } catch (err) {
       setError(err.response?.data?.error?.message || 'Không thể khởi tạo giao dịch thanh toán')
@@ -107,10 +126,17 @@ export default function TuitionPaymentPage() {
     try {
       const res = await confirmPaymentApi(paymentId, otpCode, idempotencyKey)
       setShowOtp(false)
+      setOtpLocked(false)
       setReceipt(res.data.data)
       setTuition(null)
-      refreshProfile() // Cập nhật lại số dư mới nhất từ /me
+      refreshProfile()
     } catch (err) {
+      const errCode = err.response?.data?.error?.code
+      if (TERMINAL_OTP_CODES.has(errCode)) {
+        setOtpLocked(true)
+      } else {
+        setIdempotencyKey(generateIdempotencyKey(paymentId))
+      }
       setOtpError(err.response?.data?.error?.message || 'Xác nhận OTP thất bại')
     } finally {
       setPayLoading(false)
@@ -119,7 +145,6 @@ export default function TuitionPaymentPage() {
 
   return (
     <div className="container mx-auto max-w-4xl py-8 px-4 sm:px-6 space-y-6">
-      {/* 1. Thẻ tài khoản thanh toán */}
       {profile && (
         <Card className="shadow-sm border">
           <CardContent className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -157,7 +182,6 @@ export default function TuitionPaymentPage() {
         </Card>
       )}
 
-      {/* 2. Khung tra cứu học phí */}
       <Card className="shadow-sm border">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
@@ -205,7 +229,6 @@ export default function TuitionPaymentPage() {
         </CardContent>
       </Card>
 
-      {/* 3. Chi tiết hóa đơn học phí & Xác nhận thanh toán */}
       {tuition ? (
         <Card className="shadow-sm border">
           <CardHeader className="pb-4">
@@ -241,7 +264,6 @@ export default function TuitionPaymentPage() {
               </div>
             </dl>
 
-            {/* c. Thông tin thanh toán & Thỏa thuận điều khoản */}
             {tuition.status === 'UNPAID' && (
               <div className="space-y-4 pt-2 border-t border-border">
                 <div className="space-y-1">
@@ -377,9 +399,11 @@ export default function TuitionPaymentPage() {
           onCancel={() => {
             setShowOtp(false)
             setOtpError('')
+            setOtpLocked(false)
           }}
           loading={payLoading}
           error={otpError}
+          locked={otpLocked}
           onClearError={() => setOtpError('')}
         />
       )}

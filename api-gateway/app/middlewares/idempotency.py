@@ -10,7 +10,7 @@ class IdempotencyPayloadMismatch(Exception):
 
 class IdempotencyRecord:
     def __init__(self, status: str = "IN_PROGRESS", body_hash: str = ""):
-        self.status = status  # "IN_PROGRESS" or "COMPLETED"
+        self.status = status  # "IN_PROGRESS", "COMPLETED", or "RELEASED"
         self.body_hash: str = body_hash
         self.response_content: bytes = b""
         self.status_code: int = 200
@@ -65,10 +65,25 @@ class IdempotencyStore:
                 record.media_type = media_type
                 record.event.set()
 
-    async def remove(self, key: str):
+    async def release_failed(
+        self,
+        key: str,
+        status_code: int = 500,
+        content: bytes = b"",
+        media_type: str = "application/json",
+    ):
+        """
+        Removes the key from active store so subsequent retries can proceed,
+        while populating the record response so any concurrent in-flight waiter
+        waking up from record.event receives the response instead of re-executing.
+        """
         async with self._lock:
             record = self._store.pop(key, None)
             if record:
+                record.status = "RELEASED"
+                record.status_code = status_code
+                record.response_content = content
+                record.media_type = media_type
                 record.event.set()
 
 

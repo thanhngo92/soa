@@ -1,7 +1,4 @@
--- =============================================================================
--- Account Service Database Initialization (Member 1)
--- Database: account_db
--- =============================================================================
+-- Account Service Database Schema (account_db)
 
 CREATE DATABASE IF NOT EXISTS account_db
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -40,7 +37,7 @@ INSERT INTO accounts (id, username, password_hash, full_name, email, phone, bala
 (1, 'sv.nguyen', '$2b$12$ifwvjq2lDimPUy34suN.gegFUNu7tJossyjvWMUwLUwCdV3QHLRPS', 'Nguyen Van An', 'nguyen.van.an@student.tdtu.edu.vn', '0901234567', 7500000.00),
 (2, 'sv.tran', '$2b$12$ifwvjq2lDimPUy34suN.gegFUNu7tJossyjvWMUwLUwCdV3QHLRPS', 'Tran Thi Bao', 'tran.thi.bao@student.tdtu.edu.vn', '0912345678', 2300000.00),
 (3, 'sv.le', '$2b$12$ifwvjq2lDimPUy34suN.gegFUNu7tJossyjvWMUwLUwCdV3QHLRPS', 'Le Hoang Cuong', 'le.hoang.cuong@student.tdtu.edu.vn', '0923456789', 12000000.00)
-ON DUPLICATE KEY UPDATE 
+ON DUPLICATE KEY UPDATE
     username = VALUES(username),
     password_hash = VALUES(password_hash),
     full_name = VALUES(full_name),
