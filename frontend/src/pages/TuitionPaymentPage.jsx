@@ -241,10 +241,10 @@ export default function TuitionPaymentPage() {
                   placeholder="Nhập mã số sinh viên"
                   value={mssv}
                   onChange={(e) => {
-                    setMssv(e.target.value.toUpperCase())
+                    setMssv(e.target.value)
                     if (error) setError('')
                   }}
-                  className="font-mono uppercase h-10 text-sm"
+                  className="h-10 text-sm"
                 />
                 <Button type="submit" size="sm" className="h-10 px-4 font-medium" disabled={searchLoading || !mssv.trim()}>
                   Tra cứu

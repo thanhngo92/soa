@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from datetime import datetime, timezone
 from fastapi import Request
@@ -6,7 +7,6 @@ from app.clients import account_client, notification_client, tuition_client
 from app.repositories.payment_repository import (
     create_payment,
     find_by_account,
-    find_by_id,
     transition_status,
     verify_otp_and_lock_processing,
 )
@@ -25,13 +25,9 @@ def _format_utc_iso(dt_val) -> str | None:
     return str(dt_val)
 
 
-# [Rubric Tiêu chí 2 / Đề bài Mục 3 & 4: Khởi tạo quy trình thanh toán học phí]
-# - Nghiệp vụ: Tra cứu học phí, kiểm tra số dư ban đầu, tạo bản ghi giao dịch PENDING
-#              và gửi mã OTP 2FA qua email của người nộp tiền.
-# - Kỹ thuật: Nếu gửi OTP lỗi, chuyển ngay trạng thái giao dịch sang FAILED (OTP_SEND_FAILED).
 async def initiate(request: Request, user: dict, student_id: str) -> dict:
     http = request.app.state.http
-    user_id = str(user["sub"])
+    user_id = int(user["sub"])
     user_email = user["email"]
     cleaned_student_id = (student_id or "").strip().upper()
 
@@ -39,9 +35,9 @@ async def initiate(request: Request, user: dict, student_id: str) -> dict:
     if tuition["status"] == "PAID":
         raise AppError("TUITION_ALREADY_PAID", "Tuition has already been paid", 409)
 
+    tuition_id = int(tuition["tuition_id"])
     amount = float(tuition["amount"])
     student_name = tuition["student_name"]
-    semester = tuition.get("semester")
 
     token = request.headers.get("authorization", "").replace("Bearer ", "")
     balance = await account_client.get_balance(http, token)
@@ -50,12 +46,9 @@ async def initiate(request: Request, user: dict, student_id: str) -> dict:
 
     payment_id = await create_payment({
         "account_id": user_id,
-        "email": user_email,
-        "student_id": cleaned_student_id,
-        "student_name": student_name,
+        "tuition_id": tuition_id,
         "amount": amount,
         "status": "PENDING",
-        "semester": semester,
     })
 
     try:
@@ -71,7 +64,7 @@ async def initiate(request: Request, user: dict, student_id: str) -> dict:
         await transition_status(payment_id, "PENDING", "FAILED", "OTP_SEND_FAILED")
         raise
 
-    logger.info(f"Initiated payment #{payment_id} for student {cleaned_student_id} ({amount:,.0f} VND)")
+    logger.info(f"Initiated payment #{payment_id} for tuition #{tuition_id} ({cleaned_student_id}, {amount:,.0f} VND)")
 
     return {
         "payment_id": payment_id,
@@ -80,18 +73,6 @@ async def initiate(request: Request, user: dict, student_id: str) -> dict:
     }
 
 
-# [Rubric Tiêu chí 2 & 4 / Đề bài Mục 4 & 5: Điều phối Saga Orchestration & Chống Concurrency]
-# - Nghiệp vụ: Xác nhận OTP, trừ tiền tài khoản nguồn, gạch nợ học phí trường học,
-#              kích hoạt bù trừ hoàn tiền nếu gạch nợ lỗi, gửi email biên lai khi thành công.
-# - Kỹ thuật (FSM + Saga Pattern):
-#   1. Xác thực OTP qua Notification Service (kiểm tra hạn hiệu lực, tối đa 3 lần thử).
-#   2. Chuyển trạng thái nguyên tử PENDING -> PROCESSING bằng khóa FOR UPDATE
-#      để chặn race condition khi người dùng bấm xác nhận 2 lần đồng thời.
-#   3. Gọi Account Service trừ tiền (deduct) có khóa bi quan FOR UPDATE.
-#   4. Gọi Tuition Service gạch nợ (pay) với điều kiện WHERE status = 'UNPAID'.
-#   5. BÙ TRỪ SAGA (Compensating Transaction): Nếu gạch nợ học phí thất bại (ví dụ 409 conflict),
-#      lập tức gọi Account Service hoàn tiền (refund) kèm X-Internal-Token và cập nhật FAILED.
-#   6. Chuyển trạng thái PROCESSING -> SUCCESS và kích hoạt gửi email biên lai.
 async def confirm(request: Request, user: dict, payment_id: str, otp_code: str) -> dict:
     http = request.app.state.http
     user_id = str(user["sub"])
@@ -115,12 +96,10 @@ async def confirm(request: Request, user: dict, payment_id: str, otp_code: str) 
 
     payment = lock_res["payment"]
     amount = float(payment["amount"])
-    student_id = payment["student_id"]
-    student_name = payment["student_name"]
-    semester = payment.get("semester")
+    tuition_id = int(payment["tuition_id"])
 
     try:
-        await account_client.deduct(http, user_id, amount, payment_id)
+        await account_client.deduct(http, user_id, amount, str(payment_id))
     except Exception as deduct_err:
         err_code = deduct_err.detail.get("code", "DEDUCT_FAILED") if isinstance(deduct_err, AppError) else "DEDUCT_FAILED"
         logger.warning(f"Deduct failed for payment #{payment_id} ({err_code}): {deduct_err}")
@@ -128,12 +107,12 @@ async def confirm(request: Request, user: dict, payment_id: str, otp_code: str) 
         raise
 
     try:
-        tuition_res = await tuition_client.pay(http, student_id, user_id, payment_id, semester, amount)
+        tuition_res = await tuition_client.pay(http, tuition_id=tuition_id, amount=amount)
     except Exception as exc:
         logger.error(f"Tuition pay failed for payment #{payment_id}: {exc}. Triggering refund compensation.")
         refund_ok = False
         try:
-            refund_ok = await account_client.refund(http, user_id, amount, payment_id)
+            refund_ok = await account_client.refund(http, user_id, amount, str(payment_id))
         except Exception as refund_err:
             logger.critical(f"Refund compensation failed for payment #{payment_id}: {refund_err}")
 
@@ -153,12 +132,15 @@ async def confirm(request: Request, user: dict, payment_id: str, otp_code: str) 
         raise AppError("PAYMENT_FAILED", f"Payment failed: {str(exc)}", 500)
 
     await transition_status(payment_id, "PROCESSING", "SUCCESS")
-    paid_at = (tuition_res or {}).get("paid_at") or datetime.now(timezone.utc).isoformat()
+    student_id = tuition_res["student_id"]
+    student_name = tuition_res["student_name"]
+    semester = tuition_res.get("semester")
+    paid_at = tuition_res.get("paid_at") or datetime.now(timezone.utc).isoformat()
     logger.info(f"Payment #{payment_id} completed successfully")
 
     await notification_client.send_success_email(http, {
         "email": user_email,
-        "payment_id": payment_id,
+        "payment_id": str(payment_id),
         "student_name": student_name,
         "student_id": student_id,
         "amount": amount,
@@ -166,9 +148,10 @@ async def confirm(request: Request, user: dict, payment_id: str, otp_code: str) 
     })
 
     return {
-        "payment_id": payment_id,
+        "payment_id": str(payment_id),
         "status": "SUCCESS",
         "amount": amount,
+        "tuition_id": tuition_id,
         "student_id": student_id,
         "student_name": student_name,
         "semester": semester,
@@ -176,14 +159,33 @@ async def confirm(request: Request, user: dict, payment_id: str, otp_code: str) 
     }
 
 
-async def history(account_id: str) -> list:
+async def history(request: Request, account_id: str) -> list:
+    http = request.app.state.http
     records = await find_by_account(account_id)
-    return [{
-        "payment_id": str(r["id"]),
-        "student_id": r["student_id"],
-        "student_name": r["student_name"],
-        "amount": r["amount"],
-        "status": r["status"],
-        "created_at": _format_utc_iso(r.get("created_at")),
-        "completed_at": _format_utc_iso(r.get("completed_at")),
-    } for r in records]
+    if not records:
+        return []
+
+    unique_tids = list({int(r["tuition_id"]) for r in records})
+    tuition_tasks = [tuition_client.get_tuition_by_id(http, tid) for tid in unique_tids]
+    tuition_results = await asyncio.gather(*tuition_tasks, return_exceptions=True)
+    tuition_map = {}
+    for tid, res in zip(unique_tids, tuition_results):
+        if isinstance(res, dict):
+            tuition_map[tid] = res
+
+    output = []
+    for r in records:
+        tid = int(r["tuition_id"])
+        t_info = tuition_map.get(tid, {})
+        output.append({
+            "payment_id": str(r["id"]),
+            "tuition_id": tid,
+            "student_id": t_info.get("student_id", ""),
+            "student_name": t_info.get("student_name", ""),
+            "semester": t_info.get("semester", ""),
+            "amount": r["amount"],
+            "status": r["status"],
+            "created_at": _format_utc_iso(r.get("created_at")),
+            "completed_at": _format_utc_iso(r.get("completed_at")),
+        })
+    return output

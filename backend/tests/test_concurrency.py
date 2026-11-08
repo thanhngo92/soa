@@ -109,9 +109,13 @@ async def get_otp_from_mailpit(
 def _reset_tuition_and_test_data(student_ids: list[str] | tuple[str, ...]):
     sids_sql = ", ".join(f"'{sid}'" for sid in student_ids)
     sql = (
-        f"UPDATE tuition_db.tuitions SET status = 'UNPAID', paid_at = NULL, paid_by = NULL, transaction_id = NULL "
-        f"WHERE student_id IN ({sids_sql}); "
-        f"DELETE FROM payment_db.payments WHERE student_id IN ({sids_sql});"
+        f"DELETE FROM account_db.account_transactions WHERE reference_id IN "
+        f"(SELECT CAST(id AS CHAR) FROM payment_db.payments WHERE tuition_id IN "
+        f"(SELECT id FROM tuition_db.tuitions WHERE student_id IN ({sids_sql}))); "
+        f"DELETE FROM payment_db.payments WHERE tuition_id IN "
+        f"(SELECT id FROM tuition_db.tuitions WHERE student_id IN ({sids_sql})); "
+        f"UPDATE tuition_db.tuitions SET status = 'UNPAID', paid_at = NULL "
+        f"WHERE student_id IN ({sids_sql});"
     )
     subprocess.run(
         ["docker", "compose", "exec", "-T", "mysql", "mysql", "-P8552", "-uroot", "-prootpassword", "-e", sql],

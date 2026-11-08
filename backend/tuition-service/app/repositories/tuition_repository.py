@@ -8,7 +8,7 @@ async def find_by_mssv(mssv: str) -> dict | None:
         async with conn.cursor(aiomysql.DictCursor) as cur:
             await cur.execute(
                 "SELECT t.id, s.student_id, s.student_name, s.major, t.semester, "
-                "t.amount, t.status, t.paid_at, t.paid_by, t.transaction_id, t.created_at "
+                "t.amount, t.status, t.paid_at, t.created_at "
                 "FROM students s "
                 "INNER JOIN tuitions t ON s.student_id = t.student_id "
                 "WHERE s.student_id = %s "
@@ -22,38 +22,45 @@ async def find_by_mssv(mssv: str) -> dict | None:
             return row
 
 
+async def find_by_id(tuition_id: int) -> dict | None:
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        async with conn.cursor(aiomysql.DictCursor) as cur:
+            await cur.execute(
+                "SELECT t.id, s.student_id, s.student_name, s.major, t.semester, "
+                "t.amount, t.status, t.paid_at, t.created_at "
+                "FROM tuitions t "
+                "INNER JOIN students s ON s.student_id = t.student_id "
+                "WHERE t.id = %s",
+                (tuition_id,),
+            )
+            row = await cur.fetchone()
+            if not row:
+                return None
+            row["amount"] = float(row["amount"])
+            return row
+
+
 async def mark_paid(
-    mssv: str,
-    paid_by: str,
-    transaction_id: str,
+    tuition_id: int | None = None,
+    mssv: str | None = None,
     semester: str | None = None,
     expected_amount: float | None = None,
 ) -> dict | None:
     """Atomic UNPAID -> PAID inside an ACID transaction with SELECT ... FOR UPDATE row lock.
-    Verifies semester, UNPAID status, and exact tuition amount before marking PAID.
+    Verifies UNPAID status and exact tuition amount before marking PAID.
     """
     pool = get_pool()
     async with pool.acquire() as conn:
         await conn.begin()
         try:
             async with conn.cursor(aiomysql.DictCursor) as cur:
-                # Idempotency guard: if this transaction_id already marked a tuition PAID, return it
-                await cur.execute(
-                    "SELECT t.id, s.student_id, s.student_name, s.major, t.semester, "
-                    "t.amount, t.status, t.paid_at, t.paid_by, t.transaction_id "
-                    "FROM tuitions t "
-                    "INNER JOIN students s ON s.student_id = t.student_id "
-                    "WHERE t.transaction_id = %s FOR UPDATE",
-                    (transaction_id,),
-                )
-                existing_tx = await cur.fetchone()
-                if existing_tx:
-                    await conn.commit()
-                    existing_tx["amount"] = float(existing_tx["amount"])
-                    return existing_tx
-
-                # Lock the target tuition row with FOR UPDATE
-                if semester:
+                if tuition_id is not None:
+                    await cur.execute(
+                        "SELECT id, amount, status FROM tuitions WHERE id = %s FOR UPDATE",
+                        (tuition_id,),
+                    )
+                elif semester:
                     await cur.execute(
                         "SELECT id, amount, status FROM tuitions "
                         "WHERE student_id = %s AND semester = %s FOR UPDATE",
@@ -77,9 +84,9 @@ async def mark_paid(
                     return None
 
                 await cur.execute(
-                    "UPDATE tuitions SET status = 'PAID', paid_at = NOW(), paid_by = %s, transaction_id = %s "
+                    "UPDATE tuitions SET status = 'PAID', paid_at = NOW() "
                     "WHERE id = %s AND status = 'UNPAID'",
-                    (paid_by, transaction_id, target["id"]),
+                    (target["id"],),
                 )
                 if cur.rowcount == 0:
                     await conn.rollback()
@@ -87,7 +94,7 @@ async def mark_paid(
 
                 await cur.execute(
                     "SELECT t.id, s.student_id, s.student_name, s.major, t.semester, "
-                    "t.amount, t.status, t.paid_at, t.paid_by, t.transaction_id "
+                    "t.amount, t.status, t.paid_at "
                     "FROM tuitions t "
                     "INNER JOIN students s ON s.student_id = t.student_id "
                     "WHERE t.id = %s",

@@ -66,7 +66,7 @@ async def generate_otp(
     if not otp_code:
         otp_code = f"{secrets.randbelow(1000000):06d}"
 
-    await create_otp(payment_id, otp_code, email)
+    await create_otp(payment_id, otp_code)
     logger.info(f"Generated OTP for payment_id={payment_id} -> {email}")
 
     tx_info_lines = [f"Mã giao dịch  : #{payment_id}"]

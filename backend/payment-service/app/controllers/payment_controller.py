@@ -13,5 +13,5 @@ async def confirm_controller(body: ConfirmPaymentRequest, request: Request, user
     return success(await confirm(request, user, body.payment_id, body.otp_code))
 
 
-async def history_controller(user: dict = Depends(get_current_user)):
-    return success(await history(user["sub"]))
+async def history_controller(request: Request, user: dict = Depends(get_current_user)):
+    return success(await history(request, user["sub"]))

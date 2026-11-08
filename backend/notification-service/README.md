@@ -11,7 +11,7 @@ Dịch vụ quản lý vòng đời mã xác thực OTP và gửi email thông b
 
 ## 1. Phạm Vi Chức Năng
 
-1. **Quản lý Cơ sở dữ liệu `notification_db`:** Lưu trữ mã OTP gắn với `payment_id`, thời hạn hiệu lực (`expires_at`), số lần thử (`attempts`) và trạng thái sử dụng (`is_used`).
+1. **Quản lý Cơ sở dữ liệu `notification_db` (Chuẩn 3NF):** Lưu trữ mã OTP gắn với `payment_id (INT)`, thời hạn hiệu lực (`expires_at`), số lần thử (`attempts`) và trạng thái sử dụng (`is_used`).
 2. **Sinh mã OTP 6 chữ số (`POST /otp/generate` — Internal Only):** Vô hiệu hóa mã OTP cũ của cùng `payment_id`, sinh mã 6 chữ số không trùng với các OTP đang hoạt động, thời hạn 5 phút, và gửi email kèm thông tin giao dịch (`#payment_id`, MSSV, họ tên, số tiền).
 3. **Xác thực OTP nguyên tử (`POST /otp/verify` — Internal Only):** Sử dụng ACID Transaction và khóa dòng `SELECT ... FOR UPDATE` để kiểm tra thời hạn 5 phút, giới hạn tối đa 3 lần nhập sai và đánh dấu đã sử dụng (`is_used = TRUE`) đúng một lần.
 4. **Gửi Email Biên nhận (`POST /email/success` — Internal Only):** Gửi email xác nhận thanh toán học phí thành công theo múi giờ GMT+7.
@@ -23,9 +23,8 @@ Dịch vụ quản lý vòng đời mã xác thực OTP và gửi email thông b
 ```sql
 CREATE TABLE IF NOT EXISTS otps (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    payment_id VARCHAR(50) NOT NULL,
+    payment_id INT NOT NULL,
     otp_code VARCHAR(10) NOT NULL,
-    email VARCHAR(255) NOT NULL,
     expires_at TIMESTAMP NOT NULL,
     is_used BOOLEAN NOT NULL DEFAULT FALSE,
     attempts INT NOT NULL DEFAULT 0,

@@ -7,26 +7,23 @@ async def create_payment(data: dict) -> str:
     async with pool.acquire() as conn:
         async with conn.cursor() as cur:
             await cur.execute(
-                "INSERT INTO payments (account_id, email, student_id, student_name, amount, status, semester) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                "INSERT INTO payments (account_id, tuition_id, amount, status) "
+                "VALUES (%s, %s, %s, %s)",
                 (
-                    data["account_id"],
-                    data["email"],
-                    data["student_id"],
-                    data["student_name"],
+                    int(data["account_id"]),
+                    int(data["tuition_id"]),
                     data["amount"],
                     data.get("status", "PENDING"),
-                    data.get("semester"),
                 ),
             )
             return str(cur.lastrowid)
 
 
-async def find_by_id(payment_id: str) -> dict | None:
+async def find_by_id(payment_id: str | int) -> dict | None:
     pool = get_pool()
     async with pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
-            await cur.execute("SELECT * FROM payments WHERE id = %s", (payment_id,))
+            await cur.execute("SELECT * FROM payments WHERE id = %s", (int(payment_id),))
             row = await cur.fetchone()
             if not row:
                 return None
@@ -35,26 +32,28 @@ async def find_by_id(payment_id: str) -> dict | None:
 
 
 async def verify_otp_and_lock_processing(
-    payment_id: str,
-    user_id: str,
+    payment_id: str | int,
+    user_id: str | int,
     otp_code: str,
     verify_otp_fn,
 ) -> dict:
     """Locks the payment row with SELECT ... FOR UPDATE while verifying OTP and transitioning to PROCESSING.
     Prevents concurrent confirm requests on the same payment_id from racing OTP attempts or double execution.
     """
+    pid = int(payment_id)
+    uid = int(user_id)
     pool = get_pool()
     async with pool.acquire() as conn:
         await conn.begin()
         try:
             async with conn.cursor(aiomysql.DictCursor) as cur:
-                await cur.execute("SELECT * FROM payments WHERE id = %s FOR UPDATE", (payment_id,))
+                await cur.execute("SELECT * FROM payments WHERE id = %s FOR UPDATE", (pid,))
                 payment = await cur.fetchone()
                 if not payment:
                     await conn.rollback()
                     return {"status": "NOT_FOUND"}
 
-                if str(payment["account_id"]) != str(user_id):
+                if int(payment["account_id"]) != uid:
                     await conn.rollback()
                     return {"status": "FORBIDDEN"}
 
@@ -62,14 +61,14 @@ async def verify_otp_and_lock_processing(
                     await conn.rollback()
                     return {"status": "NOT_PENDING", "current_status": payment["status"]}
 
-                otp_res = await verify_otp_fn(payment_id, otp_code)
+                otp_res = await verify_otp_fn(str(pid), otp_code)
                 if not otp_res.get("success"):
                     err_code = otp_res.get("code", "INVALID_OTP")
                     if err_code in ("OTP_MAX_ATTEMPTS_EXCEEDED", "OTP_EXPIRED"):
                         await cur.execute(
                             "UPDATE payments SET status = 'FAILED', completed_at = NOW(), error_code = %s "
                             "WHERE id = %s AND status = 'PENDING'",
-                            (err_code, payment_id),
+                            (err_code, pid),
                         )
                     await conn.commit()
                     return {
@@ -81,7 +80,7 @@ async def verify_otp_and_lock_processing(
                 await cur.execute(
                     "UPDATE payments SET status = 'PROCESSING', error_code = NULL "
                     "WHERE id = %s AND status = 'PENDING'",
-                    (payment_id,),
+                    (pid,),
                 )
                 if cur.rowcount == 0:
                     await conn.rollback()
@@ -96,34 +95,35 @@ async def verify_otp_and_lock_processing(
 
 
 async def transition_status(
-    payment_id: str,
+    payment_id: str | int,
     from_status: str,
     to_status: str,
     error_code: str | None = None,
 ) -> bool:
+    pid = int(payment_id)
     pool = get_pool()
     async with pool.acquire() as conn:
         async with conn.cursor() as cur:
             if to_status in ("SUCCESS", "FAILED"):
                 await cur.execute(
                     "UPDATE payments SET status = %s, completed_at = NOW(), error_code = %s WHERE id = %s AND status = %s",
-                    (to_status, error_code, payment_id, from_status),
+                    (to_status, error_code, pid, from_status),
                 )
             else:
                 await cur.execute(
                     "UPDATE payments SET status = %s, error_code = %s WHERE id = %s AND status = %s",
-                    (to_status, error_code, payment_id, from_status),
+                    (to_status, error_code, pid, from_status),
                 )
             return cur.rowcount > 0
 
 
-async def find_by_account(account_id: str) -> list[dict]:
+async def find_by_account(account_id: str | int) -> list[dict]:
     pool = get_pool()
     async with pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
             await cur.execute(
                 "SELECT * FROM payments WHERE account_id = %s AND status = 'SUCCESS' ORDER BY completed_at DESC, id DESC LIMIT 100",
-                (account_id,),
+                (int(account_id),),
             )
             rows = await cur.fetchall()
             for r in rows:

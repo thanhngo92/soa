@@ -60,8 +60,8 @@ Hệ thống thanh toán học phí đại học tích hợp ngân hàng điện
      Kết hợp ràng buộc `CONSTRAINT chk_balance CHECK (balance >= 0)` và `UNIQUE (account_id, reference_id, transaction_type)` để ngăn chặn thấu chi âm tiền hoặc trừ tiền đúp.
    - **Gạch nợ học phí nguyên tử (Chuẩn hóa 3NF `students` + `tuitions` & Đối chiếu khớp số tiền):**
      ```sql
-     SELECT id, amount, status FROM tuitions WHERE student_id = :mssv AND semester = :semester FOR UPDATE;
-     UPDATE tuitions SET status = 'PAID', paid_at = NOW(), paid_by = :user_id, transaction_id = :txn WHERE id = :id AND status = 'UNPAID';
+     SELECT id, amount, status FROM tuitions WHERE id = :tuition_id FOR UPDATE;
+     UPDATE tuitions SET status = 'PAID', paid_at = NOW() WHERE id = :tuition_id AND status = 'UNPAID';
      ```
    - **Xác thực OTP dùng một lần & Giới hạn 3 lần thử:**
      ```sql
@@ -89,8 +89,8 @@ Hệ thống thanh toán học phí đại học tích hợp ngân hàng điện
 |:---|:---|:---|:---|:---|:---|
 | `521H0001` | Nguyễn Văn An | Công nghệ Thông tin | HK1/2024-2025 | 4,850,000 VND | `UNPAID` |
 | `521H0002` | Trần Thị Bảo | Kế toán | HK1/2024-2025 | 3,620,000 VND | `UNPAID` |
-| `521H0003` | Lê Hoàng Cường | Kỹ thuật Điện tử | HK1/2024-2025 | 5,130,000 VND | `UNPAID` |
-| `522H0017` | Phạm Đức Dũng | Quản trị Kinh doanh | HK1/2024-2025 | 3,975,000 VND | `UNPAID` |
+| `521H0003` | Lê Hoàng Cường | Kỹ thuật Điện tử | HK1/2024-2025 | 5,190,000 VND | `UNPAID` |
+| `522H0017` | Phạm Đức Dũng | Quản trị Kinh doanh | HK1/2024-2025 | 6,450,000 VND | `UNPAID` |
 | `522H0041` | Hoàng Thị Yến | Ngôn ngữ Anh | HK1/2024-2025 | 3,280,000 VND | `UNPAID` |
 | `523H0089` | Võ Minh Khoa | Công nghệ Thông tin | HK1/2024-2025 | 4,720,000 VND | `UNPAID` |
 

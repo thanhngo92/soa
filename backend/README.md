@@ -77,7 +77,7 @@ Route -> Middleware -> Controller -> Service -> Repository -> Database
 
 ### 4.2 Kiểm soát đồng thời & Giao dịch ACID
 * **Trừ số dư tài khoản (`account-service`):** Khóa dòng `SELECT ... FOR UPDATE`, cập nhật điều kiện `balance >= amount` và ghi nhận vào bảng `account_transactions` trong cùng một ACID transaction.
-* **Gạch nợ học phí (`tuition-service`):** Cập nhật nguyên tử `UPDATE tuitions SET status = 'PAID', ... WHERE student_id = %s AND semester = %s AND status = 'UNPAID'` và kiểm tra `cur.rowcount`.
+* **Gạch nợ học phí (`tuition-service`):** Khóa dòng `SELECT ... FOR UPDATE`, cập nhật nguyên tử `UPDATE tuitions SET status = 'PAID', paid_at = NOW() WHERE id = %s AND status = 'UNPAID'` và kiểm tra `cur.rowcount`.
 * **Xác thực OTP (`notification-service`):** Khóa dòng `SELECT ... FOR UPDATE`, kiểm tra thời hạn 5 phút, giới hạn tối đa 3 lần nhập và đánh dấu `is_used = TRUE` nguyên tử.
 
 ### 4.3 Bù trừ giao dịch Saga (`payment-service`)

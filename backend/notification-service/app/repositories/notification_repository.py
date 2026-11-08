@@ -2,11 +2,12 @@ import aiomysql
 from app.config.database import get_pool
 
 
-# [Rubric Tiêu chí 2 / Đề bài Mục 4: Lưu mã OTP 2FA vào CSDL trong ACID Transaction]
+# [Rubric Tiêu chí 2 / Đề bài Mục 3: Lưu mã OTP 2FA vào CSDL trong ACID Transaction]
 # - Nghiệp vụ: Vô hiệu hóa các mã OTP cũ của cùng payment_id và lưu OTP 6 chữ số mới có thời hạn 5 phút.
 # - Kỹ thuật: Gói UPDATE (invalidate) và INSERT (create) trong cùng 1 ACID Transaction để đảm bảo
 #             tại mọi thời điểm chỉ có tối đa 1 mã OTP hiệu lực (is_used=FALSE) cho mỗi payment_id.
-async def create_otp(payment_id: str, otp_code: str, email: str) -> None:
+async def create_otp(payment_id: int | str, otp_code: str) -> None:
+    pid = int(payment_id)
     pool = get_pool()
     async with pool.acquire() as conn:
         await conn.begin()
@@ -14,12 +15,12 @@ async def create_otp(payment_id: str, otp_code: str, email: str) -> None:
             async with conn.cursor() as cur:
                 await cur.execute(
                     "UPDATE otps SET is_used = TRUE WHERE payment_id = %s AND is_used = FALSE",
-                    (payment_id,),
+                    (pid,),
                 )
                 await cur.execute(
-                    "INSERT INTO otps (payment_id, otp_code, email, expires_at, is_used, attempts) "
-                    "VALUES (%s, %s, %s, DATE_ADD(NOW(), INTERVAL 5 MINUTE), FALSE, 0)",
-                    (payment_id, otp_code, email),
+                    "INSERT INTO otps (payment_id, otp_code, expires_at, is_used, attempts) "
+                    "VALUES (%s, %s, DATE_ADD(NOW(), INTERVAL 5 MINUTE), FALSE, 0)",
+                    (pid, otp_code),
                 )
             await conn.commit()
         except Exception:
@@ -31,17 +32,18 @@ async def create_otp(payment_id: str, otp_code: str, email: str) -> None:
 # - Nghiệp vụ: Kiểm tra OTP đúng, còn hạn, chưa dùng, tối đa 3 lần thử sai.
 # - Kỹ thuật: Khóa bi quan FOR UPDATE; nếu đúng cập nhật is_used=TRUE nguyên tử;
 #             nếu sai tăng attempts, chạm mốc 3 lần tự động khóa is_used=TRUE.
-async def verify_and_consume_otp(payment_id: str, otp_code: str) -> dict:
+async def verify_and_consume_otp(payment_id: int | str, otp_code: str) -> dict:
+    pid = int(payment_id)
     pool = get_pool()
     async with pool.acquire() as conn:
         await conn.begin()
         try:
             async with conn.cursor(aiomysql.DictCursor) as cur:
                 await cur.execute(
-                    "SELECT id, otp_code, email, expires_at, is_used, attempts, "
+                    "SELECT id, otp_code, expires_at, is_used, attempts, "
                     "(expires_at >= NOW()) AS is_valid_time "
                     "FROM otps WHERE payment_id = %s ORDER BY id DESC LIMIT 1 FOR UPDATE",
-                    (payment_id,),
+                    (pid,),
                 )
                 record = await cur.fetchone()
                 if not record:

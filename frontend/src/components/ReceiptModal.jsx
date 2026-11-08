@@ -27,8 +27,8 @@ export default function ReceiptModal({ open = true, data, onClose }) {
         <div className="space-y-4 py-2">
           <div className="rounded-xl border bg-muted/30 p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Trạng thái</span>
-              <Badge variant="success">THÀNH CÔNG</Badge>
+              <span className="text-xs text-muted-foreground font-semibold">Trạng thái</span>
+              <Badge variant="success">Thành công</Badge>
             </div>
 
             <hr className="border-t border-border" />

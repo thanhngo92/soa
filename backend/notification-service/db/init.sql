@@ -8,9 +8,8 @@ USE notification_db;
 
 CREATE TABLE IF NOT EXISTS otps (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    payment_id VARCHAR(50) NOT NULL,
+    payment_id INT NOT NULL,
     otp_code VARCHAR(10) NOT NULL,
-    email VARCHAR(255) NOT NULL,
     expires_at TIMESTAMP NOT NULL,
     is_used BOOLEAN NOT NULL DEFAULT FALSE,
     attempts INT NOT NULL DEFAULT 0,

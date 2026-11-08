@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 import logging
 import re
-from app.repositories.tuition_repository import find_by_mssv, mark_paid
+from app.repositories.tuition_repository import find_by_id, find_by_mssv, mark_paid
 from app.utils.error_util import AppError
 
 logger = logging.getLogger("tuition_service")
@@ -18,20 +18,9 @@ def _format_dt(dt_val) -> str | None:
     return str(dt_val)
 
 
-# [Rubric Tiêu chí 2 / Đề bài Mục 2: Tra cứu học phí theo MSSV]
-# - Nghiệp vụ: Trả về thông tin sinh viên, ngành học, học kỳ, số tiền và trạng thái nợ.
-# - Kỹ thuật: Kiểm tra định dạng MSSV hợp lệ (6-10 ký tự), JOIN bảng students & tuitions, trả về 404 nếu không tìm thấy.
-async def get_tuition(mssv: str) -> dict:
-    """Retrieves tuition record and payment status by student ID (MSSV)."""
-    cleaned_mssv = (mssv or "").strip().upper()
-    if not _MSSV_PATTERN.match(cleaned_mssv):
-        raise AppError("INVALID_MSSV_FORMAT", "Mã số sinh viên không hợp lệ (cần từ 6 đến 10 ký tự chữ và số)", 400)
-
-    r = await find_by_mssv(cleaned_mssv)
-    if not r:
-        logger.warning(f"Tuition query failed: Student '{cleaned_mssv}' not found")
-        raise AppError("STUDENT_NOT_FOUND", f"Student {cleaned_mssv} not found", 404)
+def _serialize_tuition(r: dict) -> dict:
     return {
+        "tuition_id":   int(r["id"]),
         "student_id":   r["student_id"],
         "student_name": r["student_name"],
         "major":        r["major"],
@@ -42,30 +31,47 @@ async def get_tuition(mssv: str) -> dict:
     }
 
 
-# [Rubric Tiêu chí 4 / Đề bài Mục 5: Gạch nợ học phí nguyên tử (Atomic Conditional Update + Row Lock)]
-# - Nghiệp vụ: Chuyển trạng thái học phí sang PAID và lưu vết giao dịch.
-# - Kỹ thuật: Khóa bi quan SELECT ... FOR UPDATE, kiểm tra khớp số tiền (amount) và trạng thái UNPAID.
-#             Nếu đã thanh toán đồng thời bởi giao dịch khác -> Ném 409 TUITION_ALREADY_PAID để kích hoạt Saga Rollback.
+async def get_tuition(mssv: str) -> dict:
+    """Retrieves tuition record and payment status by student ID (MSSV)."""
+    cleaned_mssv = (mssv or "").strip().upper()
+    if not _MSSV_PATTERN.match(cleaned_mssv):
+        raise AppError("INVALID_MSSV_FORMAT", "Mã số sinh viên không hợp lệ (cần từ 6 đến 10 ký tự chữ và số)", 400)
+
+    r = await find_by_mssv(cleaned_mssv)
+    if not r:
+        logger.warning(f"Tuition query failed: Student '{cleaned_mssv}' not found")
+        raise AppError("STUDENT_NOT_FOUND", f"Student {cleaned_mssv} not found", 404)
+    return _serialize_tuition(r)
+
+
+async def get_tuition_by_id(tuition_id: int) -> dict:
+    """Retrieves tuition and student info by tuition primary key ID."""
+    r = await find_by_id(tuition_id)
+    if not r:
+        raise AppError("TUITION_NOT_FOUND", f"Tuition #{tuition_id} not found", 404)
+    return _serialize_tuition(r)
+
+
 async def pay_tuition(
-    mssv: str,
-    paid_by: str,
-    transaction_id: str,
+    tuition_id: int | None = None,
+    mssv: str | None = None,
     semester: str | None = None,
     amount: float | None = None,
 ) -> dict:
-    """
-    Executes atomic tuition payment (status UNPAID -> PAID) with row-level lock and amount verification.
-    """
+    """Executes atomic tuition payment (status UNPAID -> PAID) with row-level lock and amount verification."""
     logger.info(
-        f"Marking tuition PAID for student_id='{mssv}' semester='{semester}' amount={amount} by user='{paid_by}' (txn={transaction_id})"
+        f"Marking tuition PAID for tuition_id={tuition_id} student_id='{mssv}' semester='{semester}' amount={amount}"
     )
-    result = await mark_paid(mssv, paid_by, transaction_id, semester, amount)
+    result = await mark_paid(tuition_id=tuition_id, mssv=mssv, semester=semester, expected_amount=amount)
     if not result:
-        logger.warning(f"Conflict: Tuition for student_id='{mssv}' is ALREADY PAID or amount mismatched")
+        logger.warning(f"Conflict: Tuition (id={tuition_id}, student_id='{mssv}') is ALREADY PAID or amount mismatched")
         raise AppError("TUITION_ALREADY_PAID", "Tuition has already been paid", 409)
-    logger.info(f"Tuition marked PAID successfully for student_id='{mssv}'")
+    logger.info(f"Tuition #{result['id']} marked PAID successfully for student_id='{result['student_id']}'")
     return {
-        "student_id": mssv,
-        "status": "PAID",
-        "paid_at": _format_dt(result.get("paid_at")),
+        "tuition_id":   int(result["id"]),
+        "student_id":   result["student_id"],
+        "student_name": result["student_name"],
+        "semester":     result["semester"],
+        "status":       "PAID",
+        "paid_at":      _format_dt(result.get("paid_at")),
     }
