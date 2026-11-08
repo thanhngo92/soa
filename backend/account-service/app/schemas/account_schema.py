@@ -7,12 +7,12 @@ class LoginRequest(BaseModel):
 
 
 class DeductRequest(BaseModel):
-    account_id: str | None = None
+    account_id: str = Field(..., min_length=1)
     amount: float = Field(..., gt=0)
     transaction_id: str = Field(..., min_length=1)
 
 
 class RefundRequest(BaseModel):
-    account_id: str | None = None
+    account_id: str = Field(..., min_length=1)
     amount: float = Field(..., gt=0)
     transaction_id: str = Field(..., min_length=1)

@@ -1,14 +1,9 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class PayTuitionRequest(BaseModel):
-    student_id: str
-    paid_by: str        # account_id of payer
-    transaction_id: str
+    student_id: str = Field(..., min_length=1)
+    paid_by: str = Field(..., min_length=1)
+    transaction_id: str = Field(..., min_length=1)
     semester: str | None = None
-
-
-class RevertTuitionRequest(BaseModel):
-    student_id: str
-    transaction_id: str | None = None
-    semester: str | None = None
+    amount: float | None = Field(default=None, gt=0)

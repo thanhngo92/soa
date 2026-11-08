@@ -7,8 +7,12 @@ async def find_by_mssv(mssv: str) -> dict | None:
     async with pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
             await cur.execute(
-                "SELECT * FROM tuitions WHERE student_id = %s "
-                "ORDER BY CASE WHEN status = 'UNPAID' THEN 0 ELSE 1 END, id ASC LIMIT 1",
+                "SELECT t.id, s.student_id, s.student_name, s.major, t.semester, "
+                "t.amount, t.status, t.paid_at, t.paid_by, t.transaction_id, t.created_at "
+                "FROM students s "
+                "INNER JOIN tuitions t ON s.student_id = t.student_id "
+                "WHERE s.student_id = %s "
+                "ORDER BY CASE WHEN t.status = 'UNPAID' THEN 0 ELSE 1 END, t.id ASC LIMIT 1",
                 (mssv,),
             )
             row = await cur.fetchone()
@@ -18,65 +22,82 @@ async def find_by_mssv(mssv: str) -> dict | None:
             return row
 
 
-async def mark_paid(mssv: str, paid_by: str, transaction_id: str, semester: str | None = None) -> dict | None:
-    """Atomic UNPAID -> PAID. Returns None if already paid (Concurrency guard via MySQL row lock).
-    Supports semester filtering to ensure only targeted semester is marked PAID.
+async def mark_paid(
+    mssv: str,
+    paid_by: str,
+    transaction_id: str,
+    semester: str | None = None,
+    expected_amount: float | None = None,
+) -> dict | None:
+    """Atomic UNPAID -> PAID inside an ACID transaction with SELECT ... FOR UPDATE row lock.
+    Verifies semester, UNPAID status, and exact tuition amount before marking PAID.
     """
     pool = get_pool()
     async with pool.acquire() as conn:
-        async with conn.cursor(aiomysql.DictCursor) as cur:
-            if semester:
+        await conn.begin()
+        try:
+            async with conn.cursor(aiomysql.DictCursor) as cur:
+                # Idempotency guard: if this transaction_id already marked a tuition PAID, return it
+                await cur.execute(
+                    "SELECT t.id, s.student_id, s.student_name, s.major, t.semester, "
+                    "t.amount, t.status, t.paid_at, t.paid_by, t.transaction_id "
+                    "FROM tuitions t "
+                    "INNER JOIN students s ON s.student_id = t.student_id "
+                    "WHERE t.transaction_id = %s FOR UPDATE",
+                    (transaction_id,),
+                )
+                existing_tx = await cur.fetchone()
+                if existing_tx:
+                    await conn.commit()
+                    existing_tx["amount"] = float(existing_tx["amount"])
+                    return existing_tx
+
+                # Lock the target tuition row with FOR UPDATE
+                if semester:
+                    await cur.execute(
+                        "SELECT id, amount, status FROM tuitions "
+                        "WHERE student_id = %s AND semester = %s FOR UPDATE",
+                        (mssv, semester),
+                    )
+                else:
+                    await cur.execute(
+                        "SELECT id, amount, status FROM tuitions "
+                        "WHERE student_id = %s "
+                        "ORDER BY CASE WHEN status = 'UNPAID' THEN 0 ELSE 1 END, id ASC LIMIT 1 FOR UPDATE",
+                        (mssv,),
+                    )
+
+                target = await cur.fetchone()
+                if not target or target["status"] != "UNPAID":
+                    await conn.rollback()
+                    return None
+
+                if expected_amount is not None and abs(float(target["amount"]) - float(expected_amount)) > 0.01:
+                    await conn.rollback()
+                    return None
+
                 await cur.execute(
                     "UPDATE tuitions SET status = 'PAID', paid_at = NOW(), paid_by = %s, transaction_id = %s "
-                    "WHERE student_id = %s AND semester = %s AND status = 'UNPAID'",
-                    (paid_by, transaction_id, mssv, semester),
+                    "WHERE id = %s AND status = 'UNPAID'",
+                    (paid_by, transaction_id, target["id"]),
                 )
-            else:
-                # Update only one unpaid tuition record safely
-                await cur.execute(
-                    "UPDATE tuitions SET status = 'PAID', paid_at = NOW(), paid_by = %s, transaction_id = %s "
-                    "WHERE id = (SELECT id FROM (SELECT id FROM tuitions WHERE student_id = %s AND status = 'UNPAID' ORDER BY id ASC LIMIT 1) AS t)",
-                    (paid_by, transaction_id, mssv),
-                )
-            if cur.rowcount == 0:
-                return None
-            if semester:
-                await cur.execute("SELECT * FROM tuitions WHERE student_id = %s AND semester = %s", (mssv, semester))
-            else:
-                await cur.execute("SELECT * FROM tuitions WHERE student_id = %s AND transaction_id = %s", (mssv, transaction_id))
-            row = await cur.fetchone()
-            if row:
-                row["amount"] = float(row["amount"])
-            return row
+                if cur.rowcount == 0:
+                    await conn.rollback()
+                    return None
 
-
-async def revert_paid(mssv: str, transaction_id: str | None = None, semester: str | None = None) -> dict | None:
-    """Compensating transaction: PAID -> UNPAID (supports specific txn, semester or admin reset)."""
-    pool = get_pool()
-    async with pool.acquire() as conn:
-        async with conn.cursor(aiomysql.DictCursor) as cur:
-            if transaction_id:
                 await cur.execute(
-                    "UPDATE tuitions SET status = 'UNPAID', paid_at = NULL, paid_by = NULL, transaction_id = NULL "
-                    "WHERE student_id = %s AND status = 'PAID' AND transaction_id = %s",
-                    (mssv, transaction_id),
+                    "SELECT t.id, s.student_id, s.student_name, s.major, t.semester, "
+                    "t.amount, t.status, t.paid_at, t.paid_by, t.transaction_id "
+                    "FROM tuitions t "
+                    "INNER JOIN students s ON s.student_id = t.student_id "
+                    "WHERE t.id = %s",
+                    (target["id"],),
                 )
-            elif semester:
-                await cur.execute(
-                    "UPDATE tuitions SET status = 'UNPAID', paid_at = NULL, paid_by = NULL, transaction_id = NULL "
-                    "WHERE student_id = %s AND status = 'PAID' AND semester = %s",
-                    (mssv, semester),
-                )
-            else:
-                await cur.execute(
-                    "UPDATE tuitions SET status = 'UNPAID', paid_at = NULL, paid_by = NULL, transaction_id = NULL "
-                    "WHERE student_id = %s AND status = 'PAID'",
-                    (mssv,),
-                )
-            if cur.rowcount == 0:
-                return None
-            await cur.execute("SELECT * FROM tuitions WHERE student_id = %s ORDER BY id DESC LIMIT 1", (mssv,))
-            row = await cur.fetchone()
-            if row:
-                row["amount"] = float(row["amount"])
-            return row
+                row = await cur.fetchone()
+                await conn.commit()
+                if row:
+                    row["amount"] = float(row["amount"])
+                return row
+        except Exception:
+            await conn.rollback()
+            raise

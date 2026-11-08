@@ -8,13 +8,6 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { AlertCircle, Loader2, GraduationCap } from 'lucide-react'
 
-const SAMPLE_USERS = [
-  { username: 'sv.nguyen', name: 'Nguyễn Văn An', note: '7.5M VND' },
-  { username: 'sv.tran', name: 'Trần Thị Bích', note: '5.0M VND' },
-  { username: 'sv.le', name: 'Lê Hoàng Nam', note: '12M VND' },
-  { username: 'sv.pham', name: 'Phạm Minh Đức', note: '15M VND' },
-]
-
 export default function LoginPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
@@ -31,15 +24,15 @@ export default function LoginPage() {
       login(res.data.data.access_token)
       navigate('/')
     } catch (err) {
-      setError(err.response?.data?.error?.message || 'Tài khoản hoặc mật khẩu không chính xác')
+      const code = err.response?.data?.error?.code
+      setError(
+        code === 'INVALID_CREDENTIALS'
+          ? 'Tài khoản hoặc mật khẩu không chính xác'
+          : err.response?.data?.error?.message || 'Tài khoản hoặc mật khẩu không chính xác'
+      )
     } finally {
       setLoading(false)
     }
-  }
-
-  const fillSample = (u) => {
-    setForm({ username: u, password: 'Test@123' })
-    setError('')
   }
 
   return (
@@ -56,14 +49,14 @@ export default function LoginPage() {
             Cổng thanh toán học phí sinh viên
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-5">
+        <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="username">Tên đăng nhập</Label>
               <Input
                 id="username"
                 type="text"
-                placeholder="Tên đăng nhập"
+                placeholder="Nhập tên đăng nhập"
                 autoComplete="username"
                 value={form.username}
                 onChange={(e) => setForm({ ...form, username: e.target.value })}
@@ -75,7 +68,7 @@ export default function LoginPage() {
               <Input
                 id="password"
                 type="password"
-                placeholder="Mật khẩu"
+                placeholder="Nhập mật khẩu"
                 autoComplete="current-password"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
@@ -84,7 +77,7 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="flex items-center gap-2 p-3 text-sm text-destructive bg-destructive/10 rounded-lg border border-destructive/20">
+              <div className="flex items-center gap-2 p-2.5 text-xs text-red-800 dark:text-red-200 bg-red-50 dark:bg-red-950/40 rounded-lg border border-red-200 dark:border-red-900/50">
                 <AlertCircle className="h-4 w-4 shrink-0" />
                 <span>{error}</span>
               </div>
@@ -101,25 +94,6 @@ export default function LoginPage() {
               )}
             </Button>
           </form>
-
-          <div className="pt-3 border-t border-border/60">
-            <p className="text-xs text-muted-foreground font-medium mb-2 text-center">
-              Chọn nhanh tài khoản thử nghiệm:
-            </p>
-            <div className="grid grid-cols-2 gap-1.5">
-              {SAMPLE_USERS.map((item) => (
-                <button
-                  key={item.username}
-                  type="button"
-                  onClick={() => fillSample(item.username)}
-                  className="p-2 rounded-lg border border-border/80 bg-muted/40 hover:bg-muted/80 text-left transition-colors"
-                >
-                  <p className="text-xs font-semibold text-foreground truncate">{item.name}</p>
-                  <p className="text-[11px] text-muted-foreground font-mono">{item.username} • {item.note}</p>
-                </button>
-              ))}
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

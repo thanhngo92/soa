@@ -18,7 +18,7 @@ Giao diện người dùng của hệ thống thanh toán học phí iBanking, x
    * Đồng hồ đếm ngược thời gian hiệu lực 5 phút.
    * Hỗ trợ nhập lại tối đa 3 lần khi sai mã OTP và tự động khóa ô nhập khi giao dịch vượt quá số lần thử hoặc hết hạn.
    * Hiển thị biên lai điện tử (`ReceiptModal`) và cập nhật lại số dư ngay sau khi thanh toán thành công.
-4. **Lịch sử giao dịch (`/history`):** Hiển thị danh sách các giao dịch đã thực hiện kèm trạng thái (`SUCCESS`, `PROCESSING`, `PENDING`, `FAILED`) và nguyên nhân lỗi chi tiết.
+4. **Lịch sử giao dịch (`/history`):** Hiển thị danh sách các giao dịch thanh toán học phí thành công (`GET /api/payments/history`).
 
 ---
 

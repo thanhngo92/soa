@@ -1,4 +1,5 @@
 -- Account Service Database Schema (account_db)
+SET NAMES utf8mb4;
 
 CREATE DATABASE IF NOT EXISTS account_db
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -30,13 +31,20 @@ CREATE TABLE IF NOT EXISTS account_transactions (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_account_tx (account_id, created_at DESC),
     INDEX idx_ref_id (reference_id),
-    UNIQUE KEY uq_account_ref_type (account_id, reference_id, transaction_type)
+    UNIQUE KEY uq_account_ref_type (account_id, reference_id, transaction_type),
+    CONSTRAINT fk_tx_account FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT chk_tx_amount CHECK (amount > 0),
+    CONSTRAINT chk_tx_type CHECK (transaction_type IN ('DEDUCT', 'REFUND')),
+    CONSTRAINT chk_tx_balance_math CHECK (
+        (transaction_type = 'DEDUCT' AND balance_after = balance_before - amount AND balance_after >= 0)
+        OR (transaction_type = 'REFUND' AND balance_after = balance_before + amount)
+    )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO accounts (id, username, password_hash, full_name, email, phone, balance) VALUES
-(1, 'sv.nguyen', '$2b$12$ifwvjq2lDimPUy34suN.gegFUNu7tJossyjvWMUwLUwCdV3QHLRPS', 'Nguyen Van An', 'nguyen.van.an@student.tdtu.edu.vn', '0901234567', 7500000.00),
-(2, 'sv.tran', '$2b$12$ifwvjq2lDimPUy34suN.gegFUNu7tJossyjvWMUwLUwCdV3QHLRPS', 'Tran Thi Bao', 'tran.thi.bao@student.tdtu.edu.vn', '0912345678', 2300000.00),
-(3, 'sv.le', '$2b$12$ifwvjq2lDimPUy34suN.gegFUNu7tJossyjvWMUwLUwCdV3QHLRPS', 'Le Hoang Cuong', 'le.hoang.cuong@student.tdtu.edu.vn', '0923456789', 12000000.00)
+(1, 'sv.nguyen', '$2b$12$ifwvjq2lDimPUy34suN.gegFUNu7tJossyjvWMUwLUwCdV3QHLRPS', 'Nguyễn Văn An', 'nguyen.van.an@student.tdtu.edu.vn', '0901234567', 7500000.00),
+(2, 'sv.tran', '$2b$12$ifwvjq2lDimPUy34suN.gegFUNu7tJossyjvWMUwLUwCdV3QHLRPS', 'Trần Thị Bảo', 'tran.thi.bao@student.tdtu.edu.vn', '0912345678', 2300000.00),
+(3, 'sv.le', '$2b$12$ifwvjq2lDimPUy34suN.gegFUNu7tJossyjvWMUwLUwCdV3QHLRPS', 'Lê Hoàng Cường', 'le.hoang.cuong@student.tdtu.edu.vn', '0923456789', 12000000.00)
 ON DUPLICATE KEY UPDATE
     username = VALUES(username),
     password_hash = VALUES(password_hash),

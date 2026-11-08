@@ -2,17 +2,6 @@ import aiomysql
 from app.config.database import get_pool
 
 
-async def supersede_pending_payments(account_id: str, student_id: str) -> None:
-    pool = get_pool()
-    async with pool.acquire() as conn:
-        async with conn.cursor() as cur:
-            await cur.execute(
-                "UPDATE payments SET status = 'FAILED', error_code = 'SUPERSEDED', completed_at = NOW() "
-                "WHERE account_id = %s AND student_id = %s AND status = 'PENDING'",
-                (account_id, student_id),
-            )
-
-
 async def create_payment(data: dict) -> str:
     pool = get_pool()
     async with pool.acquire() as conn:
@@ -45,6 +34,67 @@ async def find_by_id(payment_id: str) -> dict | None:
             return row
 
 
+async def verify_otp_and_lock_processing(
+    payment_id: str,
+    user_id: str,
+    otp_code: str,
+    verify_otp_fn,
+) -> dict:
+    """Locks the payment row with SELECT ... FOR UPDATE while verifying OTP and transitioning to PROCESSING.
+    Prevents concurrent confirm requests on the same payment_id from racing OTP attempts or double execution.
+    """
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        await conn.begin()
+        try:
+            async with conn.cursor(aiomysql.DictCursor) as cur:
+                await cur.execute("SELECT * FROM payments WHERE id = %s FOR UPDATE", (payment_id,))
+                payment = await cur.fetchone()
+                if not payment:
+                    await conn.rollback()
+                    return {"status": "NOT_FOUND"}
+
+                if str(payment["account_id"]) != str(user_id):
+                    await conn.rollback()
+                    return {"status": "FORBIDDEN"}
+
+                if payment["status"] != "PENDING":
+                    await conn.rollback()
+                    return {"status": "NOT_PENDING", "current_status": payment["status"]}
+
+                otp_res = await verify_otp_fn(payment_id, otp_code)
+                if not otp_res.get("success"):
+                    err_code = otp_res.get("code", "INVALID_OTP")
+                    if err_code in ("OTP_MAX_ATTEMPTS_EXCEEDED", "OTP_EXPIRED"):
+                        await cur.execute(
+                            "UPDATE payments SET status = 'FAILED', completed_at = NOW(), error_code = %s "
+                            "WHERE id = %s AND status = 'PENDING'",
+                            (err_code, payment_id),
+                        )
+                    await conn.commit()
+                    return {
+                        "status": "OTP_FAILED",
+                        "code": err_code,
+                        "message": otp_res.get("message", "Mã OTP không chính xác, đã hết hạn hoặc quá số lần thử."),
+                    }
+
+                await cur.execute(
+                    "UPDATE payments SET status = 'PROCESSING', error_code = NULL "
+                    "WHERE id = %s AND status = 'PENDING'",
+                    (payment_id,),
+                )
+                if cur.rowcount == 0:
+                    await conn.rollback()
+                    return {"status": "NOT_PENDING"}
+
+                await conn.commit()
+                payment["amount"] = float(payment["amount"])
+                return {"status": "OK", "payment": payment}
+        except Exception:
+            await conn.rollback()
+            raise
+
+
 async def transition_status(
     payment_id: str,
     from_status: str,
@@ -72,12 +122,7 @@ async def find_by_account(account_id: str) -> list[dict]:
     async with pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
             await cur.execute(
-                "UPDATE payments SET status = 'FAILED', error_code = 'OTP_EXPIRED', completed_at = NOW() "
-                "WHERE account_id = %s AND status = 'PENDING' AND created_at < DATE_SUB(NOW(), INTERVAL 5 MINUTE)",
-                (account_id,),
-            )
-            await cur.execute(
-                "SELECT * FROM payments WHERE account_id = %s ORDER BY created_at DESC, id DESC LIMIT 100",
+                "SELECT * FROM payments WHERE account_id = %s AND status = 'SUCCESS' ORDER BY completed_at DESC, id DESC LIMIT 100",
                 (account_id,),
             )
             rows = await cur.fetchall()

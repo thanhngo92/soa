@@ -25,11 +25,20 @@ async def get_tuition(http: httpx.AsyncClient, mssv: str) -> dict:
         raise AppError("SERVICE_UNAVAILABLE", "Tuition service is currently unavailable", 503)
 
 
-async def pay(http: httpx.AsyncClient, student_id: str, paid_by: str, transaction_id: str, semester: str | None = None) -> dict:
-    """Invokes Tuition Service to mark tuition as PAID atomically for targeted semester."""
+async def pay(
+    http: httpx.AsyncClient,
+    student_id: str,
+    paid_by: str,
+    transaction_id: str,
+    semester: str | None = None,
+    amount: float | None = None,
+) -> dict:
+    """Invokes Tuition Service to mark tuition as PAID atomically for targeted semester and amount."""
     payload = {"student_id": student_id, "paid_by": paid_by, "transaction_id": transaction_id}
     if semester:
         payload["semester"] = semester
+    if amount is not None:
+        payload["amount"] = amount
     try:
         r = await http.post(
             f"{settings.TUITION_SERVICE_URL}/api/tuitions/pay",

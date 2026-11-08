@@ -1,6 +1,7 @@
 import asyncio
 import os
 import re
+import subprocess
 import sys
 import time
 import httpx
@@ -105,6 +106,21 @@ async def get_otp_from_mailpit(
     raise RuntimeError(f"Không tìm thấy email chứa mã OTP gửi tới {email} (payment_id={payment_id}) trong Mailpit")
 
 
+def _reset_tuition_and_test_data(student_ids: list[str] | tuple[str, ...]):
+    sids_sql = ", ".join(f"'{sid}'" for sid in student_ids)
+    sql = (
+        f"UPDATE tuition_db.tuitions SET status = 'UNPAID', paid_at = NULL, paid_by = NULL, transaction_id = NULL "
+        f"WHERE student_id IN ({sids_sql}); "
+        f"DELETE FROM payment_db.payments WHERE student_id IN ({sids_sql});"
+    )
+    subprocess.run(
+        ["docker", "compose", "exec", "-T", "mysql", "mysql", "-P8552", "-uroot", "-prootpassword", "-e", sql],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+
+
 async def _ensure_balance(client: httpx.AsyncClient, token: str, target_balance: float):
     profile = await get_profile(client, token)
     current = float(profile["balance"])
@@ -199,12 +215,7 @@ async def test_scenario_1_overdraw(client: httpx.AsyncClient):
     log_info(f"  - Giao dịch B: MSSV {student_b} (3,620,000 VND <= 7,500,000 VND)")
     log_info("  -> Tổng 2 giao dịch = 8,470,000 VND > 7,500,000 VND!")
 
-    for sid in (student_a, student_b):
-        await client.post(
-            f"{TUITION_URL}/api/tuitions/revert",
-            headers={"X-Internal-Token": INTERNAL_SERVICE_KEY},
-            json={"student_id": sid, "transaction_id": ""},
-        )
+    _reset_tuition_and_test_data((student_a, student_b))
 
     token = await login(client, "sv.nguyen", "Test@123")
     await _ensure_balance(client, token, 7_500_000.0)
@@ -288,12 +299,7 @@ async def test_scenario_1_overdraw(client: httpx.AsyncClient):
         passed = False
 
     await _ensure_balance(client, token, 7_500_000.0)
-    if paid_student:
-        await client.post(
-            f"{TUITION_URL}/api/tuitions/revert",
-            headers={"X-Internal-Token": INTERNAL_SERVICE_KEY},
-            json={"student_id": paid_student, "transaction_id": ""},
-        )
+    _reset_tuition_and_test_data((student_a, student_b))
     log_info("Đã khôi phục số dư tài khoản sv.nguyen và trạng thái học phí về ban đầu.\n")
     return passed
 
@@ -306,11 +312,7 @@ async def test_scenario_2_double_payment(client: httpx.AsyncClient):
     student_id = "523H0089"
     log_info(f"Mã sinh viên nợ học phí: {student_id} (Số tiền: 4,720,000 VND)")
 
-    await client.post(
-        f"{TUITION_URL}/api/tuitions/revert",
-        headers={"X-Internal-Token": INTERNAL_SERVICE_KEY},
-        json={"student_id": student_id, "transaction_id": ""},
-    )
+    _reset_tuition_and_test_data((student_id,))
 
     token_1 = await login(client, "sv.nguyen", "Test@123")
     token_2 = await login(client, "sv.le", "Test@123")
@@ -414,11 +416,7 @@ async def test_scenario_2_double_payment(client: httpx.AsyncClient):
     log_info("Dọn dẹp môi trường test (hoàn tiền người thanh toán và revert học phí về UNPAID)...")
     await _ensure_balance(client, token_1, 7_500_000.0)
     await _ensure_balance(client, token_2, 12_000_000.0)
-    await client.post(
-        f"{TUITION_URL}/api/tuitions/revert",
-        headers={"X-Internal-Token": INTERNAL_SERVICE_KEY},
-        json={"student_id": student_id, "transaction_id": ""},
-    )
+    _reset_tuition_and_test_data((student_id,))
     log_info("Đã khôi phục hoàn toàn dữ liệu về trạng thái ban đầu.\n")
 
     return passed
@@ -435,11 +433,7 @@ async def test_scenario_3_idempotency_key(client: httpx.AsyncClient) -> bool:
     log_info("  - Số dư tài khoản chỉ bị trừ ĐÚNG 1 LẦN, không bị trừ đúp.\n")
 
     student_id = "522H0041"
-    await client.post(
-        f"{TUITION_URL}/api/tuitions/revert",
-        headers={"X-Internal-Token": INTERNAL_SERVICE_KEY},
-        json={"student_id": student_id, "transaction_id": ""},
-    )
+    _reset_tuition_and_test_data((student_id,))
 
     token = await login(client, "sv.le")
     await _ensure_balance(client, token, 12_000_000.0)
@@ -512,11 +506,7 @@ async def test_scenario_3_idempotency_key(client: httpx.AsyncClient) -> bool:
 
     log_info("Dọn dẹp môi trường test Kịch bản 3...")
     await _ensure_balance(client, token, 12_000_000.0)
-    await client.post(
-        f"{TUITION_URL}/api/tuitions/revert",
-        headers={"X-Internal-Token": INTERNAL_SERVICE_KEY},
-        json={"student_id": student_id, "transaction_id": ""},
-    )
+    _reset_tuition_and_test_data((student_id,))
     log_info("Đã hoàn tiền và khôi phục nợ học phí về UNPAID thành công.\n")
 
     return passed

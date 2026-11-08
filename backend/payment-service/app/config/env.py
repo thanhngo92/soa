@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     MYSQL_PASSWORD: str = "rootpassword"
     MYSQL_DATABASE: str = "payment_db"
     
-    JWT_SECRET: str = "change_me_to_a_secure_secret"
+    JWT_SECRET: str = "super_secret_jwt_key_change_in_prod"
     JWT_EXPIRE_MINUTES: int = 60
     INTERNAL_SERVICE_KEY: str = "super_internal_service_secret_key_2026"
     ACCOUNT_SERVICE_URL: str = "http://account-service:8661"

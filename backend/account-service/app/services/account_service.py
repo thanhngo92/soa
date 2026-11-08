@@ -9,7 +9,6 @@ from app.repositories.account_repository import (
     find_by_id,
     deduct_balance,
     refund_balance,
-    get_account_transactions,
 )
 from app.utils.error_util import AppError
 
@@ -83,9 +82,3 @@ async def refund(account_id: str, amount: float, transaction_id: str = "") -> di
         raise AppError("ACCOUNT_NOT_FOUND", "Account not found", 404)
     logger.info(f"Refund completed successfully. Restored balance: {result['balance']:,.0f} VND")
     return {"balance": result["balance"]}
-
-
-async def get_statement(account_id: str, limit: int = 100) -> list[dict]:
-    """Retrieves account statement (balance history ledger) for authenticated user."""
-    return await get_account_transactions(account_id, limit)
-

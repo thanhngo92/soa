@@ -27,18 +27,13 @@ async def get_balance(http: httpx.AsyncClient, token: str) -> float:
 
 async def deduct(
     http: httpx.AsyncClient,
-    token: str,
+    account_id: str,
     amount: float,
     transaction_id: str,
-    account_id: str | None = None,
 ) -> dict:
-    """Invokes Account Service to deduct user balance atomically."""
-    payload: dict = {"amount": amount, "transaction_id": transaction_id}
-    if account_id:
-        payload["account_id"] = str(account_id)
+    """Invokes Account Service to deduct user balance atomically via X-Internal-Token."""
+    payload = {"account_id": str(account_id), "amount": amount, "transaction_id": transaction_id}
     headers = {"X-Internal-Token": settings.INTERNAL_SERVICE_KEY}
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
     try:
         r = await http.post(
             f"{settings.ACCOUNT_SERVICE_URL}/api/accounts/deduct",
@@ -59,21 +54,13 @@ async def deduct(
 
 async def refund(
     http: httpx.AsyncClient,
-    token: str,
+    account_id: str,
     amount: float,
     transaction_id: str,
-    account_id: str | None = None,
 ) -> bool:
-    """
-    Invokes Account Service to execute Saga compensating refund.
-    Passes account_id directly with X-Internal-Token so Saga rollback succeeds even if user JWT expired.
-    """
-    payload: dict = {"amount": amount, "transaction_id": transaction_id}
-    if account_id:
-        payload["account_id"] = str(account_id)
+    """Invokes Account Service to execute Saga compensating refund via X-Internal-Token."""
+    payload = {"account_id": str(account_id), "amount": amount, "transaction_id": transaction_id}
     headers = {"X-Internal-Token": settings.INTERNAL_SERVICE_KEY}
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
     try:
         r = await http.post(
             f"{settings.ACCOUNT_SERVICE_URL}/api/accounts/refund",

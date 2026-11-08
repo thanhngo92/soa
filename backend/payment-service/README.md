@@ -11,14 +11,14 @@ Dịch vụ điều phối giao dịch thanh toán học phí (Saga Orchestrator
 ## 1. Phạm Vi Chức Năng
 
 1. **Quản lý Cơ sở dữ liệu `payment_db`:** Lưu trữ thông tin giao dịch, trạng thái xử lý (`PENDING`, `PROCESSING`, `SUCCESS`, `FAILED`), mã lỗi (`error_code`) và lịch sử giao dịch theo tài khoản.
-2. **Khởi tạo giao dịch (`POST /initiate`):** Kiểm tra công nợ học phí từ Tuition Service, đối chiếu số dư khả dụng từ Account Service, hủy các phiên `PENDING` cũ của cùng sinh viên, tạo bản ghi `PENDING` mới và yêu cầu Notification Service gửi mã OTP qua email.
+2. **Khởi tạo giao dịch (`POST /initiate`):** Kiểm tra công nợ học phí từ Tuition Service, đối chiếu số dư khả dụng từ Account Service, tạo bản ghi `PENDING` mới và yêu cầu Notification Service gửi mã OTP qua email.
 3. **Xác nhận OTP & Thực thi Saga (`POST /confirm`):**
    * Xác thực mã OTP qua Notification Service (nếu OTP hết hạn hoặc nhập sai quá 3 lần thì chuyển trạng thái giao dịch sang `FAILED`).
    * Chuyển trạng thái nguyên tử từ `PENDING` sang `PROCESSING`.
    * Bước 1: Trừ số dư tài khoản tại Account Service (`/deduct`).
    * Bước 2: Gạch nợ học phí tại Tuition Service (`/pay`).
    * Bù trừ (Saga Compensation): Nếu Bước 1 thành công nhưng Bước 2 thất bại, gọi ngay `/refund` tại Account Service để hoàn tiền cho người dùng và cập nhật trạng thái giao dịch sang `FAILED` (`TUITION_MARK_FAILED`).
-4. **Truy vấn lịch sử (`GET /history`):** Tự động đóng các giao dịch `PENDING` quá hạn 5 phút và trả về danh sách lịch sử thanh toán của người dùng.
+4. **Truy vấn lịch sử (`GET /history`):** Trả về danh sách lịch sử các giao dịch thanh toán thành công (`SUCCESS`) của người dùng.
 
 ---
 
@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS payments (
     completed_at TIMESTAMP NULL DEFAULT NULL,
     INDEX idx_student_id (student_id),
     INDEX idx_account_created (account_id, created_at DESC),
+    CONSTRAINT chk_payment_amount CHECK (amount > 0),
     CONSTRAINT chk_payment_status CHECK (status IN ('PENDING', 'PROCESSING', 'SUCCESS', 'FAILED'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```

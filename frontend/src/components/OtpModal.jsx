@@ -10,17 +10,15 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { AlertCircle, ShieldCheck, Clock, Loader2, RotateCw } from 'lucide-react'
+import { AlertCircle, ShieldCheck, Clock, Loader2 } from 'lucide-react'
 
 // [Rubric Tiêu chí 5 & 7 / Đề bài Mục 3: Modal xác thực OTP 2FA]
 // - Nghiệp vụ: Đếm ngược thời hạn hiệu lực 5 phút (300s), giới hạn 6 ký tự số.
 // - Kỹ thuật: Khóa input và nút xác nhận ngay lập tức khi locked=true (hết hạn hoặc quá 3 lần nhập sai).
-//             Hỗ trợ gửi lại OTP mới khi hết hạn qua cơ chế supersede_pending_payments.
 export default function OtpModal({
   open = true,
   onConfirm,
   onCancel,
-  onResend,
   loading,
   error,
   locked = false,
@@ -28,33 +26,13 @@ export default function OtpModal({
 }) {
   const [otp, setOtp] = useState('')
   const countdown = useCountdown(300)
-  const [resendCooldown, setResendCooldown] = useState(0)
 
   useEffect(() => {
     if (open) {
       setOtp('')
       countdown.start()
-      setResendCooldown(30)
     }
   }, [open])
-
-  useEffect(() => {
-    if (resendCooldown <= 0) return
-    const timer = setInterval(() => {
-      setResendCooldown((prev) => Math.max(0, prev - 1))
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [resendCooldown])
-
-  const handleResend = () => {
-    if (resendCooldown > 0 || loading || locked) return
-    setOtp('')
-    if (onClearError) onClearError()
-    countdown.reset()
-    countdown.start()
-    setResendCooldown(30)
-    if (onResend) onResend()
-  }
 
   const isExpired = !countdown.isActive
 
@@ -112,19 +90,8 @@ export default function OtpModal({
               </div>
             )}
 
-            <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
+            <div className="text-xs text-muted-foreground pt-1">
               <span>Tối đa 3 lần thử sai</span>
-              {onResend && !locked && (
-                <button
-                  type="button"
-                  onClick={handleResend}
-                  disabled={resendCooldown > 0 || loading}
-                  className="text-primary hover:underline font-medium inline-flex items-center gap-1 disabled:opacity-50 disabled:no-underline cursor-pointer"
-                >
-                  <RotateCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
-                  <span>{resendCooldown > 0 ? `Gửi lại mã (${resendCooldown}s)` : 'Gửi lại mã OTP'}</span>
-                </button>
-              )}
             </div>
           </div>
 

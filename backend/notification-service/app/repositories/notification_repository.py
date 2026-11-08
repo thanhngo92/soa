@@ -2,18 +2,29 @@ import aiomysql
 from app.config.database import get_pool
 
 
-# [Rubric Tiêu chí 5 / Đề bài Mục 3: Lưu mã OTP 2FA vào CSDL]
-# - Nghiệp vụ: Lưu OTP 6 chữ số gắn với payment_id, có thời hạn 5 phút.
-# - Kỹ thuật: expires_at = DATE_ADD(NOW(), INTERVAL 5 MINUTE), attempts khởi tạo bằng 0.
+# [Rubric Tiêu chí 2 / Đề bài Mục 4: Lưu mã OTP 2FA vào CSDL trong ACID Transaction]
+# - Nghiệp vụ: Vô hiệu hóa các mã OTP cũ của cùng payment_id và lưu OTP 6 chữ số mới có thời hạn 5 phút.
+# - Kỹ thuật: Gói UPDATE (invalidate) và INSERT (create) trong cùng 1 ACID Transaction để đảm bảo
+#             tại mọi thời điểm chỉ có tối đa 1 mã OTP hiệu lực (is_used=FALSE) cho mỗi payment_id.
 async def create_otp(payment_id: str, otp_code: str, email: str) -> None:
     pool = get_pool()
     async with pool.acquire() as conn:
-        async with conn.cursor() as cur:
-            await cur.execute(
-                "INSERT INTO otps (payment_id, otp_code, email, expires_at, is_used) "
-                "VALUES (%s, %s, %s, DATE_ADD(NOW(), INTERVAL 5 MINUTE), FALSE)",
-                (payment_id, otp_code, email),
-            )
+        await conn.begin()
+        try:
+            async with conn.cursor() as cur:
+                await cur.execute(
+                    "UPDATE otps SET is_used = TRUE WHERE payment_id = %s AND is_used = FALSE",
+                    (payment_id,),
+                )
+                await cur.execute(
+                    "INSERT INTO otps (payment_id, otp_code, email, expires_at, is_used, attempts) "
+                    "VALUES (%s, %s, %s, DATE_ADD(NOW(), INTERVAL 5 MINUTE), FALSE, 0)",
+                    (payment_id, otp_code, email),
+                )
+            await conn.commit()
+        except Exception:
+            await conn.rollback()
+            raise
 
 
 # [Rubric Tiêu chí 5 & 6 / Đề bài Mục 3 & 4: Xác thực và tiêu thụ mã OTP]
@@ -82,16 +93,6 @@ async def verify_and_consume_otp(payment_id: str, otp_code: str) -> dict:
         except Exception:
             await conn.rollback()
             raise
-
-
-async def invalidate_otps(payment_id: str) -> None:
-    pool = get_pool()
-    async with pool.acquire() as conn:
-        async with conn.cursor() as cur:
-            await cur.execute(
-                "UPDATE otps SET is_used = TRUE WHERE payment_id = %s AND is_used = FALSE",
-                (payment_id,),
-            )
 
 
 async def is_otp_active(otp_code: str) -> bool:

@@ -11,7 +11,7 @@ Cổng giao tiếp tập trung (Single Entry Point) cho hệ thống iBanking Tu
 
 1. **Định tuyến ngược (Reverse Proxy):** Tiếp nhận request từ Frontend và chuyển tiếp đến microservice đích theo tiền tố đường dẫn `/api/{service}/{path}`.
 2. **Quản lý CORS:** Xử lý cấu hình Cross-Origin Resource Sharing tập trung cho ứng dụng web tại cổng `3000`.
-3. **Workflow Guard:** Chặn các truy cập trực tiếp từ bên ngoài vào các endpoint nội bộ (`/api/tuitions/pay`, `/api/tuitions/revert`, `/api/accounts/deduct`, `/api/accounts/refund`, `/api/notifications/otp/*`, `/api/notifications/email/success`) và loại bỏ header `X-Internal-Token` giả mạo từ client.
+3. **Workflow Guard:** Chặn các truy cập trực tiếp từ bên ngoài vào các endpoint nội bộ (`/api/tuitions/pay`, `/api/accounts/deduct`, `/api/accounts/refund`, `/api/notifications/otp/*`, `/api/notifications/email/success`) và loại bỏ header `X-Internal-Token` giả mạo từ client.
 4. **Idempotency-Key Middleware:** Hỗ trợ header `Idempotency-Key` trên các phương thức thay đổi dữ liệu (`POST`, `PUT`, `PATCH`, `DELETE`) với TTL 5 phút để chống xử lý trùng lặp khi mạng chập chờn hoặc người dùng bấm đúp.
 5. **Health Check tổng hợp (`GET /health`):** Kiểm tra trạng thái hoạt động của Gateway cùng toàn bộ 4 microservice phía sau.
 

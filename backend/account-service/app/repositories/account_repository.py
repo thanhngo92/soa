@@ -52,11 +52,13 @@ async def find_by_id(account_id: str | int) -> dict | None:
             return _format_account(row) if row else None
 
 
-# [Rubric Tiêu chí 6: Quản lý Giao dịch & Concurrency - Trừ tiền an toàn ACID]
-# - Nghiệp vụ (Đề bài Mục 4): Trừ tiền tài khoản nguồn sau khi OTP xác thực hợp lệ.
+# [Rubric Tiêu chí 4: Quản lý Giao dịch & Concurrency - Trừ tiền an toàn ACID]
+# - Nghiệp vụ (Đề bài Mục 5): Trừ tiền tài khoản nguồn sau khi OTP xác thực hợp lệ.
 # - Kỹ thuật: Khóa bi quan (SELECT ... FOR UPDATE), kiểm tra số dư nguyên tử (balance >= amount),
 #             kiểm tra idempotency qua reference_id và ghi bút toán sổ cái DEDUCT.
 async def deduct_balance(account_id: str | int, amount: float, transaction_id: str = "") -> dict | None:
+    if amount <= 0:
+        return None
     pool = get_pool()
     async with pool.acquire() as conn:
         await conn.begin()
@@ -121,11 +123,13 @@ async def deduct_balance(account_id: str | int, amount: float, transaction_id: s
             raise
 
 
-# [Rubric Tiêu chí 6: Saga Compensation - Hoàn tiền tự động khi gạch nợ thất bại]
+# [Rubric Tiêu chí 4: Saga Compensation - Hoàn tiền tự động khi gạch nợ thất bại]
 # - Nghiệp vụ (Đề bài Mục 5): Bù trừ hoàn tiền về tài khoản khi bước gạch nợ học phí gặp sự cố.
-# - Kỹ thuật: ACID transaction, kiểm tra tồn tại bút toán DEDUCT gốc để chống hoàn tiền khống,
+# - Kỹ thuật: ACID transaction, kiểm tra tồn tại bút toán DEDUCT gốc và đối soát khớp số tiền để chống hoàn tiền khống,
 #             khóa FOR UPDATE, cộng lại balance và ghi bút toán sổ cái REFUND.
 async def refund_balance(account_id: str | int, amount: float, transaction_id: str = "") -> dict | None:
+    if amount <= 0:
+        return None
     pool = get_pool()
     async with pool.acquire() as conn:
         await conn.begin()
@@ -153,12 +157,12 @@ async def refund_balance(account_id: str | int, amount: float, transaction_id: s
 
                     if transaction_id.isdigit():
                         await cur.execute(
-                            "SELECT id FROM account_transactions "
+                            "SELECT id, amount FROM account_transactions "
                             "WHERE account_id = %s AND reference_id = %s AND transaction_type = 'DEDUCT'",
                             (account_id, transaction_id),
                         )
                         deduct_record = await cur.fetchone()
-                        if not deduct_record:
+                        if not deduct_record or abs(float(deduct_record["amount"]) - float(amount)) > 0.01:
                             await conn.rollback()
                             return None
 
@@ -196,20 +200,3 @@ async def refund_balance(account_id: str | int, amount: float, transaction_id: s
         except Exception:
             await conn.rollback()
             raise
-
-
-async def get_account_transactions(account_id: str | int, limit: int = 100) -> list[dict]:
-    pool = get_pool()
-    async with pool.acquire() as conn:
-        async with conn.cursor(aiomysql.DictCursor) as cur:
-            await cur.execute(
-                "SELECT * FROM account_transactions WHERE account_id = %s ORDER BY created_at DESC, id DESC LIMIT %s",
-                (account_id, limit),
-            )
-            rows = await cur.fetchall()
-            for r in rows:
-                r["amount"] = float(r["amount"])
-                r["balance_before"] = float(r["balance_before"])
-                r["balance_after"] = float(r["balance_after"])
-                r["created_at"] = _format_dt(r.get("created_at"))
-            return list(rows)

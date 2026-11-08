@@ -29,7 +29,6 @@ app.add_middleware(RequestLoggingMiddleware)
 # Kỹ thuật: Client chỉ được đi qua luồng điều phối Saga của Payment Service.
 BLOCKED_EXTERNAL_ROUTES = {
     ("POST", "tuitions", "pay"),
-    ("POST", "tuitions", "revert"),
     ("POST", "accounts", "deduct"),
     ("POST", "accounts", "refund"),
     ("POST", "notifications", "otp/generate"),

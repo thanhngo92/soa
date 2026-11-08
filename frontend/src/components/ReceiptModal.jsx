@@ -35,18 +35,18 @@ export default function ReceiptModal({ open = true, data, onClose }) {
 
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Mã giao dịch</span>
-              <span className="font-mono font-medium">{data.payment_id}</span>
+              <span className="font-mono font-medium">#{data.payment_id}</span>
             </div>
 
             {data.student_name && (
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Sinh viên</span>
+                <span className="text-muted-foreground">Họ và tên sinh viên</span>
                 <span className="font-semibold text-foreground">{data.student_name}</span>
               </div>
             )}
 
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Mã sinh viên</span>
+              <span className="text-muted-foreground">Mã số sinh viên (MSSV)</span>
               <span className="font-mono font-bold text-foreground">{data.student_id}</span>
             </div>
 

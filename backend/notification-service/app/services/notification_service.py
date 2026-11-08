@@ -10,7 +10,6 @@ from app.config.env import settings
 from app.repositories.notification_repository import (
     create_otp,
     verify_and_consume_otp,
-    invalidate_otps,
     is_otp_active,
 )
 from app.utils.error_util import AppError
@@ -57,8 +56,6 @@ async def generate_otp(
     student_name: str | None = None,
     amount: float | None = None,
 ) -> None:
-    await invalidate_otps(payment_id)
-
     otp_code = None
     for _ in range(20):
         candidate = f"{secrets.randbelow(1000000):06d}"

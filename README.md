@@ -13,8 +13,6 @@ Hệ thống thanh toán học phí đại học tích hợp ngân hàng điện
 | `api-gateway` | `8877` | Stateless | [api-gateway/README.md](./api-gateway/README.md) |
 | `frontend` | `3000` | Stateless | [frontend/README.md](./frontend/README.md) |
 
-Tài liệu phân tích UML, ERD và thiết kế chi tiết toàn hệ thống: [docs/SYSTEM_DESIGN.md](./docs/SYSTEM_DESIGN.md)
-
 ---
 
 ## 2. Thiết Kế Nghiệp Vụ & Dữ Liệu (UML & ERD)
@@ -60,9 +58,10 @@ Tài liệu phân tích UML, ERD và thiết kế chi tiết toàn hệ thống:
      INSERT INTO account_transactions (...);
      ```
      Kết hợp ràng buộc `CONSTRAINT chk_balance CHECK (balance >= 0)` và `UNIQUE (account_id, reference_id, transaction_type)` để ngăn chặn thấu chi âm tiền hoặc trừ tiền đúp.
-   - **Gạch nợ học phí nguyên tử:**
+   - **Gạch nợ học phí nguyên tử (Chuẩn hóa 3NF `students` + `tuitions` & Đối chiếu khớp số tiền):**
      ```sql
-     UPDATE tuitions SET status = 'PAID', paid_at = NOW(), paid_by = :user_id, transaction_id = :txn WHERE student_id = :mssv AND semester = :semester AND status = 'UNPAID';
+     SELECT id, amount, status FROM tuitions WHERE student_id = :mssv AND semester = :semester FOR UPDATE;
+     UPDATE tuitions SET status = 'PAID', paid_at = NOW(), paid_by = :user_id, transaction_id = :txn WHERE id = :id AND status = 'UNPAID';
      ```
    - **Xác thực OTP dùng một lần & Giới hạn 3 lần thử:**
      ```sql
@@ -81,19 +80,19 @@ Tài liệu phân tích UML, ERD và thiết kế chi tiết toàn hệ thống:
 ### Tài khoản iBanking mẫu:
 | Username | Password | Họ và Tên | Số Dư Khả Dụng |
 |:---|:---|:---|:---|
-| `sv.nguyen` | `Test@123` | Nguyen Van An | 7,500,000 VND |
-| `sv.tran` | `Test@123` | Tran Thi Bao | 2,300,000 VND |
-| `sv.le` | `Test@123` | Le Hoang Cuong | 12,000,000 VND |
+| `sv.nguyen` | `Test@123` | Nguyễn Văn An | 7,500,000 VND |
+| `sv.tran` | `Test@123` | Trần Thị Bảo | 2,300,000 VND |
+| `sv.le` | `Test@123` | Lê Hoàng Cường | 12,000,000 VND |
 
 ### Mã Sinh Viên nợ học phí:
 | MSSV | Họ và Tên | Ngành | Học Kỳ | Học Phí | Trạng Thái |
 |:---|:---|:---|:---|:---|:---|
-| `521H0001` | Nguyen Van An | Cong nghe Thong tin | HK1/2024-2025 | 4,850,000 VND | `UNPAID` |
-| `521H0002` | Tran Thi Bao | Ke toan | HK1/2024-2025 | 3,620,000 VND | `UNPAID` |
-| `521H0003` | Le Hoang Cuong | Ky thuat Dien tu | HK1/2024-2025 | 5,130,000 VND | `UNPAID` |
-| `522H0017` | Pham Duc Dung | Quan tri Kinh doanh | HK1/2024-2025 | 3,975,000 VND | `UNPAID` |
-| `522H0041` | Hoang Thi Yen | Ngon ngu Anh | HK1/2024-2025 | 3,280,000 VND | `UNPAID` |
-| `523H0089` | Vo Minh Khoa | Cong nghe Thong tin | HK1/2024-2025 | 4,720,000 VND | `UNPAID` |
+| `521H0001` | Nguyễn Văn An | Công nghệ Thông tin | HK1/2024-2025 | 4,850,000 VND | `UNPAID` |
+| `521H0002` | Trần Thị Bảo | Kế toán | HK1/2024-2025 | 3,620,000 VND | `UNPAID` |
+| `521H0003` | Lê Hoàng Cường | Kỹ thuật Điện tử | HK1/2024-2025 | 5,130,000 VND | `UNPAID` |
+| `522H0017` | Phạm Đức Dũng | Quản trị Kinh doanh | HK1/2024-2025 | 3,975,000 VND | `UNPAID` |
+| `522H0041` | Hoàng Thị Yến | Ngôn ngữ Anh | HK1/2024-2025 | 3,280,000 VND | `UNPAID` |
+| `523H0089` | Võ Minh Khoa | Công nghệ Thông tin | HK1/2024-2025 | 4,720,000 VND | `UNPAID` |
 
 ---
 
