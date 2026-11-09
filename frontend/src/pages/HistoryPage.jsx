@@ -5,6 +5,14 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Loader2 } from 'lucide-react'
 
+const ERROR_REASON_MAP = {
+  OTP_MAX_ATTEMPTS_EXCEEDED: 'Sai OTP quá 3 lần',
+  OTP_EXPIRED: 'Hết hạn OTP',
+  INSUFFICIENT_BALANCE: 'Không đủ số dư',
+  TUITION_MARK_FAILED: 'Khoản nợ đã được thanh toán (Đã hoàn tiền)',
+  OTP_SEND_FAILED: 'Lỗi gửi OTP',
+}
+
 export default function HistoryPage() {
   const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(true)
@@ -38,7 +46,7 @@ export default function HistoryPage() {
 
       {!loading && !error && records.length === 0 && (
         <div className="py-12 text-center text-xs text-muted-foreground border border-dashed rounded-lg bg-card">
-          Chưa có giao dịch nào được ghi nhận.
+          Chưa có giao dịch thanh toán thành công nào.
         </div>
       )}
 
@@ -52,7 +60,7 @@ export default function HistoryPage() {
                   <th className="py-3 px-4">Họ và tên sinh viên</th>
                   <th className="py-3 px-4">MSSV</th>
                   <th className="py-3 px-4 text-right">Số tiền</th>
-                  <th className="py-3 px-4">Thời gian</th>
+                  <th className="py-3 px-4">Thời gian thanh toán</th>
                   <th className="py-3 px-4">Trạng thái</th>
                 </tr>
               </thead>
@@ -78,10 +86,10 @@ export default function HistoryPage() {
                       {r.status === 'SUCCESS' ? (
                         <Badge variant="success">Thành công</Badge>
                       ) : (
-                        <div className="flex flex-col gap-1 items-start">
+                        <div className="flex flex-col gap-0.5 items-start">
                           <Badge variant="destructive">Thất bại</Badge>
-                          <span className="text-[11px] text-amber-600 font-semibold whitespace-nowrap">
-                            Đã hoàn tiền (Saga)
+                          <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                            {ERROR_REASON_MAP[r.error_code] || r.error_code || 'Giao dịch bị hủy'}
                           </span>
                         </div>
                       )}

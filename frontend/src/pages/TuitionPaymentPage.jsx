@@ -35,6 +35,14 @@ const OTP_ERROR_TRANSLATIONS = {
   PAYMENT_FAILED: 'Giao dịch không thành công (Khoản học phí đã được thanh toán bởi giao dịch khác). Số tiền đã được hoàn trả.',
 }
 
+// ============================================================================
+// CỜ CẤU HÌNH KIỂM THỬ (TESTING FLAGS):
+// - Đặt `true`: Chặn nút bấm ở Frontend nếu số dư không đủ (UI tự bảo vệ).
+// - Đặt `false`: Cho phép bấm nút dù thiếu tiền để request gửi xuống Backend
+//                kiểm tra và trả về mã lỗi 400 INSUFFICIENT_BALANCE.
+// ============================================================================
+const ENABLE_FRONTEND_BALANCE_GUARD = true
+
 export default function TuitionPaymentPage() {
   const { user: authUser, refreshProfile } = useAuth()
   const profile = (authUser && authUser.balance !== undefined) ? authUser : null
@@ -48,6 +56,7 @@ export default function TuitionPaymentPage() {
   const [otpLocked, setOtpLocked] = useState(false)
   const [agreedTerms, setAgreedTerms] = useState(false)
   const [error, setError] = useState('')
+  const [payError, setPayError] = useState('')
   const [otpError, setOtpError] = useState('')
   const [searchLoading, setSearchLoading] = useState(false)
   const [payLoading, setPayLoading] = useState(false)
@@ -59,6 +68,7 @@ export default function TuitionPaymentPage() {
 
     const seq = ++searchSeqRef.current
     setError('')
+    setPayError('')
     setOtpError('')
     setOtpLocked(false)
     setSearchLoading(true)
@@ -119,6 +129,7 @@ export default function TuitionPaymentPage() {
   const handleInitiate = async () => {
     if (!tuition || tuition.status === 'PAID') return
     setError('')
+    setPayError('')
     setOtpError('')
     setOtpLocked(false)
     setPayLoading(true)
@@ -135,7 +146,7 @@ export default function TuitionPaymentPage() {
         TUITION_ALREADY_PAID: 'Khoản học phí này đã được thanh toán.',
         INSUFFICIENT_BALANCE: 'Số dư khả dụng không đủ để thực hiện giao dịch.',
       }
-      setError((code && msgMap[code]) || err.response?.data?.error?.message || 'Không thể khởi tạo giao dịch')
+      setPayError((code && msgMap[code]) || err.response?.data?.error?.message || 'Không thể khởi tạo giao dịch')
     } finally {
       setPayLoading(false)
     }
@@ -173,7 +184,7 @@ export default function TuitionPaymentPage() {
   }
 
   const isBalanceSufficient = profile && tuition ? profile.balance >= tuition.amount : true
-  const isPayable = tuition && tuition.status === 'UNPAID' && isBalanceSufficient && agreedTerms
+  const isPayable = tuition && tuition.status === 'UNPAID' && agreedTerms && (!ENABLE_FRONTEND_BALANCE_GUARD || isBalanceSufficient)
 
   return (
     <div className="container mx-auto max-w-5xl py-6 px-4 sm:px-6 space-y-5">
@@ -323,7 +334,7 @@ export default function TuitionPaymentPage() {
                   id="terms"
                   checked={agreedTerms}
                   onChange={(e) => setAgreedTerms(e.target.checked)}
-                  disabled={!tuition || tuition.status === 'PAID' || !isBalanceSufficient || payLoading}
+                  disabled={!tuition || tuition.status === 'PAID' || payLoading}
                   className="mt-0.5 h-3.5 w-3.5 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer shrink-0"
                 />
                 <span>Tôi xác nhận thông tin sinh viên và đồng ý với các thỏa thuận và điều khoản của hệ thống.</span>
@@ -335,9 +346,16 @@ export default function TuitionPaymentPage() {
                 </div>
               )}
 
-              {tuition && tuition.status === 'UNPAID' && !isBalanceSufficient && (
+              {tuition && tuition.status === 'UNPAID' && ENABLE_FRONTEND_BALANCE_GUARD && !isBalanceSufficient && (
                 <div className="p-2.5 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-200 text-xs border border-red-200 dark:border-red-900/50">
                   Số dư khả dụng không đủ để thanh toán.
+                </div>
+              )}
+
+              {payError && (
+                <div className="flex items-center gap-2 p-2.5 text-xs text-red-800 dark:text-red-200 bg-red-50 dark:bg-red-950/40 rounded-lg border border-red-200 dark:border-red-900/50">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                  <span>{payError}</span>
                 </div>
               )}
 

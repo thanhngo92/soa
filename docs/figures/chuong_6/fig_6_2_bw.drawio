@@ -1,0 +1,283 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" version="21.6.8" type="device">
+  <diagram id="ch6_seq_success_satzinger_compliant" name="Tuan Tu Thanh Toan Thanh Cong">
+    <mxGraphModel dx="1000" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1040" pageHeight="660" background="#ffffff" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        
+        
+        
+        
+
+        
+        <mxCell id="actor_user" value="Người dùng" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;strokeWidth=1.2;strokeColor=#000000;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=10;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="28" y="25" width="24" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="line_user" value="" style="endArrow=none;dashed=1;html=1;strokeColor=#000000;strokeWidth=1;" edge="1" parent="1" source="actor_user">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="40" y="630" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        
+        <mxCell id="box_client" value="&lt;b&gt;:Web Client&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=1.2;strokeColor=#000000;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=10.5;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="120" y="28" width="90" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="line_client" value="" style="endArrow=none;dashed=1;html=1;strokeColor=#000000;strokeWidth=1;" edge="1" parent="1" source="box_client">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="165" y="630" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        
+        <mxCell id="box_gw" value="&lt;b&gt;:API Gateway&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=1.2;strokeColor=#000000;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=10.5;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="257" y="28" width="96" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="line_gw" value="" style="endArrow=none;dashed=1;html=1;strokeColor=#000000;strokeWidth=1;" edge="1" parent="1" source="box_gw">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="305" y="630" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        
+        <mxCell id="box_payment" value="&lt;b&gt;:Payment Service&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=1.2;strokeColor=#000000;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=10.5;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="420" y="28" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="line_payment" value="" style="endArrow=none;dashed=1;html=1;strokeColor=#000000;strokeWidth=1;" edge="1" parent="1" source="box_payment">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="480" y="630" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        
+        <mxCell id="box_account" value="&lt;b&gt;:Account Service&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=1.2;strokeColor=#000000;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=10.5;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="598" y="28" width="104" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="line_account" value="" style="endArrow=none;dashed=1;html=1;strokeColor=#000000;strokeWidth=1;" edge="1" parent="1" source="box_account">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="650" y="630" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        
+        <mxCell id="box_tuition" value="&lt;b&gt;:Tuition Service&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=1.2;strokeColor=#000000;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=10.5;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="753" y="28" width="104" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="line_tuition" value="" style="endArrow=none;dashed=1;html=1;strokeColor=#000000;strokeWidth=1;" edge="1" parent="1" source="box_tuition">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="805" y="630" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        
+        <mxCell id="box_notify" value="&lt;b&gt;:Notification Service&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=1.2;strokeColor=#000000;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=10.5;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="897" y="28" width="116" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="line_notify" value="" style="endArrow=none;dashed=1;html=1;strokeColor=#000000;strokeWidth=1;" edge="1" parent="1" source="box_notify">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="955" y="630" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+
+        
+        
+        
+        
+        <mxCell id="act_client" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=1;strokeColor=#000000;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="160" y="100" width="10" height="485" as="geometry" />
+        </mxCell>
+
+        
+        <mxCell id="act_gw" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=1;strokeColor=#000000;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="300" y="130" width="10" height="425" as="geometry" />
+        </mxCell>
+
+        
+        <mxCell id="act_payment" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=1;strokeColor=#000000;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="475" y="160" width="10" height="365" as="geometry" />
+        </mxCell>
+
+        
+        <mxCell id="act_notify1" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=1;strokeColor=#000000;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="950" y="190" width="10" height="40" as="geometry" />
+        </mxCell>
+
+        
+        <mxCell id="act_account" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=1;strokeColor=#000000;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="645" y="295" width="10" height="40" as="geometry" />
+        </mxCell>
+
+        
+        <mxCell id="act_tuition" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=1;strokeColor=#000000;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="800" y="355" width="10" height="40" as="geometry" />
+        </mxCell>
+
+        
+        <mxCell id="act_notify2" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=1;strokeColor=#000000;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="950" y="455" width="10" height="40" as="geometry" />
+        </mxCell>
+
+
+        
+        
+        
+
+        
+        <mxCell id="msg1" value="submitOtp(otp)" style="endArrow=block;endFill=1;html=1;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=9.5;fontColor=#000000;labelBackgroundColor=#ffffff;align=center;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="40" y="105" as="sourcePoint" />
+            <mxPoint x="160" y="105" as="targetPoint" />
+            <mxPoint as="offset" y="-10" />
+          </mxGeometry>
+        </mxCell>
+
+        
+        <mxCell id="msg2" value="POST /api/payments/confirm" style="endArrow=block;endFill=1;html=1;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=9;fontColor=#000000;labelBackgroundColor=#ffffff;align=center;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="170" y="135" as="sourcePoint" />
+            <mxPoint x="300" y="135" as="targetPoint" />
+            <mxPoint as="offset" y="-12" />
+          </mxGeometry>
+        </mxCell>
+
+        
+        <mxCell id="msg3" value="POST /api/payments/confirm" style="endArrow=block;endFill=1;html=1;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=9.5;fontColor=#000000;labelBackgroundColor=#ffffff;align=center;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="310" y="165" as="sourcePoint" />
+            <mxPoint x="475" y="165" as="targetPoint" />
+            <mxPoint as="offset" y="-10" />
+          </mxGeometry>
+        </mxCell>
+
+        
+        <mxCell id="msg4" value="POST /api/notifications/otp/verify" style="endArrow=block;endFill=1;html=1;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=9.5;fontColor=#000000;labelBackgroundColor=#ffffff;align=center;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="485" y="195" as="sourcePoint" />
+            <mxPoint x="950" y="195" as="targetPoint" />
+            <mxPoint as="offset" y="-10" />
+          </mxGeometry>
+        </mxCell>
+
+        
+        <mxCell id="msg5" value="200 OK" style="endArrow=open;endFill=0;dashed=1;html=1;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=9.5;fontColor=#000000;labelBackgroundColor=#ffffff;align=center;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="950" y="225" as="sourcePoint" />
+            <mxPoint x="485" y="225" as="targetPoint" />
+            <mxPoint as="offset" y="-10" />
+          </mxGeometry>
+        </mxCell>
+
+        
+        <mxCell id="msg6_self" value="updateStatus(PROCESSING)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=9;fontStyle=2;fontColor=#000000;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="485" y="245" as="sourcePoint" />
+            <mxPoint x="485" y="268" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="520" y="245" />
+              <mxPoint x="520" y="268" />
+            </Array>
+            <mxPoint as="offset" x="65" y="-10" />
+          </mxGeometry>
+        </mxCell>
+
+        
+        <mxCell id="msg7" value="POST /api/accounts/deduct" style="endArrow=block;endFill=1;html=1;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=9;fontColor=#000000;labelBackgroundColor=#ffffff;align=center;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="485" y="300" as="sourcePoint" />
+            <mxPoint x="645" y="300" as="targetPoint" />
+            <mxPoint as="offset" y="-12" />
+          </mxGeometry>
+        </mxCell>
+
+        
+        <mxCell id="msg8" value="200 OK" style="endArrow=open;endFill=0;dashed=1;html=1;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=9.5;fontColor=#000000;labelBackgroundColor=#ffffff;align=center;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="645" y="328" as="sourcePoint" />
+            <mxPoint x="485" y="328" as="targetPoint" />
+            <mxPoint as="offset" y="-10" />
+          </mxGeometry>
+        </mxCell>
+
+        
+        <mxCell id="msg9" value="POST /api/tuitions/pay" style="endArrow=block;endFill=1;html=1;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=9.5;fontColor=#000000;labelBackgroundColor=#ffffff;align=center;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="485" y="358" as="sourcePoint" />
+            <mxPoint x="800" y="358" as="targetPoint" />
+            <mxPoint as="offset" y="-10" />
+          </mxGeometry>
+        </mxCell>
+
+        
+        <mxCell id="msg10" value="200 OK" style="endArrow=open;endFill=0;dashed=1;html=1;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=9.5;fontColor=#000000;labelBackgroundColor=#ffffff;align=center;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="800" y="386" as="sourcePoint" />
+            <mxPoint x="485" y="386" as="targetPoint" />
+            <mxPoint as="offset" y="-10" />
+          </mxGeometry>
+        </mxCell>
+
+        
+        <mxCell id="msg11_self" value="updateStatus(SUCCESS)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=9;fontStyle=2;fontColor=#000000;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="485" y="406" as="sourcePoint" />
+            <mxPoint x="485" y="429" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="520" y="406" />
+              <mxPoint x="520" y="429" />
+            </Array>
+            <mxPoint as="offset" x="65" y="-10" />
+          </mxGeometry>
+        </mxCell>
+
+        
+        <mxCell id="msg12" value="POST /api/notifications/email/success" style="endArrow=block;endFill=1;html=1;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=9.5;fontColor=#000000;labelBackgroundColor=#ffffff;align=center;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="485" y="460" as="sourcePoint" />
+            <mxPoint x="950" y="460" as="targetPoint" />
+            <mxPoint as="offset" y="-10" />
+          </mxGeometry>
+        </mxCell>
+
+        
+        <mxCell id="msg13" value="200 OK" style="endArrow=open;endFill=0;dashed=1;html=1;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=9.5;fontColor=#000000;labelBackgroundColor=#ffffff;align=center;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="950" y="488" as="sourcePoint" />
+            <mxPoint x="485" y="488" as="targetPoint" />
+            <mxPoint as="offset" y="-10" />
+          </mxGeometry>
+        </mxCell>
+
+        
+        <mxCell id="msg14" value="200 OK" style="endArrow=open;endFill=0;dashed=1;html=1;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=9.5;fontColor=#000000;labelBackgroundColor=#ffffff;align=center;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="475" y="520" as="sourcePoint" />
+            <mxPoint x="310" y="520" as="targetPoint" />
+            <mxPoint as="offset" y="-10" />
+          </mxGeometry>
+        </mxCell>
+
+        
+        <mxCell id="msg15" value="200 OK" style="endArrow=open;endFill=0;dashed=1;html=1;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=9.5;fontColor=#000000;labelBackgroundColor=#ffffff;align=center;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="300" y="550" as="sourcePoint" />
+            <mxPoint x="170" y="550" as="targetPoint" />
+            <mxPoint as="offset" y="-10" />
+          </mxGeometry>
+        </mxCell>
+
+        
+        <mxCell id="msg16" value="displayReceipt()" style="endArrow=open;endFill=0;dashed=1;html=1;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=9;fontColor=#000000;labelBackgroundColor=#ffffff;align=center;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="160" y="580" as="sourcePoint" />
+            <mxPoint x="40" y="580" as="targetPoint" />
+            <mxPoint as="offset" y="-12" />
+          </mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -517,6 +517,8 @@ async def test_scenario_3_idempotency_key(client: httpx.AsyncClient) -> bool:
 
 
 async def main():
+    target_scenario = sys.argv[1].strip() if len(sys.argv) > 1 else "all"
+
     print(f"\n{BOLD}{CYAN}KIỂM THỬ TỰ ĐỘNG CONCURRENCY & TRANSACTION CONSISTENCY (SOA iBanking){RESET}")
     print(f"Target API Gateway: {GATEWAY_URL}")
     print(f"Target Mailpit     : {MAILPIT_URL}\n")
@@ -530,14 +532,21 @@ async def main():
 
         log_pass("API Gateway và các Microservices đang hoạt động bình thường.")
 
-        p0 = await test_scenario_0_workflow_guard(client)
-        p1 = await test_scenario_1_overdraw(client)
-        p2 = await test_scenario_2_double_payment(client)
-        p3 = await test_scenario_3_idempotency_key(client)
+        results = []
+        if target_scenario in ["0", "all"]:
+            results.append(("Kịch bản 0", await test_scenario_0_workflow_guard(client)))
+        if target_scenario in ["1", "all"]:
+            results.append(("Kịch bản 1", await test_scenario_1_overdraw(client)))
+        if target_scenario in ["2", "all"]:
+            results.append(("Kịch bản 2", await test_scenario_2_double_payment(client)))
+        if target_scenario in ["3", "all"]:
+            results.append(("Kịch bản 3", await test_scenario_3_idempotency_key(client)))
 
         log_header("TỔNG KẾT KẾT QUẢ KIỂM THỬ")
-        if p0 and p1 and p2 and p3:
-            print(f"\n{GREEN}{BOLD}TẤT CẢ CÁC BÀI KIỂM THỬ ĐÃ HOÀN TẤT THÀNH CÔNG (PASS 4/4){RESET}\n")
+        all_passed = all(r[1] for r in results)
+        if all_passed:
+            passed_count = len([r for r in results if r[1]])
+            print(f"\n{GREEN}{BOLD}CÁC BÀI KIỂM THỬ ĐÃ HOÀN TẤT THÀNH CÔNG (PASS {passed_count}/{len(results)}){RESET}\n")
         else:
             print(f"\n{RED}{BOLD}CÓ BÀI KIỂM THỬ KHÔNG THÀNH CÔNG{RESET}\n")
             sys.exit(1)

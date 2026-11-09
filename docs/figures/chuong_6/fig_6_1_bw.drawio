@@ -1,0 +1,114 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" version="21.6.8" type="device">
+  <diagram id="ch6_state_machine_strict_grammar" name="May Trang Thai Giao Dich Saga">
+    <mxGraphModel dx="1000" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1040" pageHeight="320" background="#ffffff" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ========================================================================= -->
+        <!-- 1. CÁC NÚT TRẠNG THÁI (STATES) - CHUẨN UML: ĐỒNG NHẤT 100%               -->
+        <!-- ========================================================================= -->
+
+        <!-- Start Node: Pseudostate (●) -->
+        <mxCell id="node_start" value="" style="ellipse;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="40" y="66" width="22" height="22" as="geometry"/>
+        </mxCell>
+
+        <!-- State PENDING: x=150, y=55, w=130, h=44 -->
+        <mxCell id="state_pending" value="PENDING" style="rounded=1;arcSize=18;whiteSpace=wrap;html=1;strokeWidth=1.5;strokeColor=#000000;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=13;fontStyle=1;fontColor=#000000;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="150" y="55" width="130" height="44" as="geometry"/>
+        </mxCell>
+
+        <!-- State PROCESSING: x=450, y=55, w=160, h=44 -->
+        <mxCell id="state_processing" value="PROCESSING" style="rounded=1;arcSize=18;whiteSpace=wrap;html=1;strokeWidth=1.5;strokeColor=#000000;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=13;fontStyle=1;fontColor=#000000;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="450" y="55" width="160" height="44" as="geometry"/>
+        </mxCell>
+
+        <!-- State SUCCESS: x=780, y=55, w=130, h=44 -->
+        <mxCell id="state_success" value="SUCCESS" style="rounded=1;arcSize=18;whiteSpace=wrap;html=1;strokeWidth=1.5;strokeColor=#000000;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=13;fontStyle=1;fontColor=#000000;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="780" y="55" width="130" height="44" as="geometry"/>
+        </mxCell>
+
+        <!-- Final State 1: Hoàn tất sau SUCCESS (◉) -->
+        <mxCell id="final_success" value="" style="ellipse;html=1;shape=endState;fillColor=#000000;strokeColor=#000000;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="980" y="66" width="22" height="22" as="geometry"/>
+        </mxCell>
+
+        <!-- State FAILED: x=450, y=215, w=160, h=44 -->
+        <mxCell id="state_failed" value="FAILED" style="rounded=1;arcSize=18;whiteSpace=wrap;html=1;strokeWidth=1.5;strokeColor=#000000;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=13;fontStyle=1;fontColor=#000000;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="450" y="215" width="160" height="44" as="geometry"/>
+        </mxCell>
+
+        <!-- Final State 2: Đóng phiên sau FAILED (◉) -->
+        <mxCell id="final_failed" value="" style="ellipse;html=1;shape=endState;fillColor=#000000;strokeColor=#000000;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="740" y="226" width="22" height="22" as="geometry"/>
+        </mxCell>
+
+
+        <!-- ========================================================================= -->
+        <!-- 2. TRANSITIONS: CẤU TRÚC NGỮ PHÁP CHẶT CHẼ: Trigger [Guard] / Action      -->
+        <!-- ========================================================================= -->
+
+        <!-- 1. Start -> PENDING: Trigger: Khởi tạo giao dịch -->
+        <mxCell id="edge_start_pending" value="Khởi tạo giao dịch" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;fontStyle=0;labelBackgroundColor=#ffffff;align=center;" edge="1" parent="1" source="node_start" target="state_pending">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" y="-14"/>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 2. PENDING -> PROCESSING: Trigger + Guard: Xác thực OTP [Hợp lệ] -->
+        <mxCell id="edge_pending_processing" value="Xác thực OTP [Hợp lệ]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;fontStyle=0;labelBackgroundColor=#ffffff;align=center;" edge="1" parent="1" source="state_pending" target="state_processing">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" y="-14"/>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 3. PROCESSING -> SUCCESS: Trigger + Guard: Gạch nợ [Thành công] -->
+        <mxCell id="edge_processing_success" value="Gạch nợ [Thành công]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;fontStyle=0;labelBackgroundColor=#ffffff;align=center;" edge="1" parent="1" source="state_processing" target="state_success">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" y="-14"/>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 4. SUCCESS -> Final1: Trigger: Đóng phiên -->
+        <mxCell id="edge_success_final" value="Đóng phiên" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#000000;strokeWidth=1.1;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;fontStyle=0;labelBackgroundColor=#ffffff;align=center;" edge="1" parent="1" source="state_success" target="final_success">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" y="-14"/>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 5. PENDING -> FAILED: Trigger + Guard: Xác thực OTP [Không hợp lệ] -->
+        <mxCell id="edge_pending_failed" value="Xác thực OTP&#xa;[Hết hạn hoặc Sai &gt; 3 lần]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=9.5;fontColor=#000000;fontStyle=0;labelBackgroundColor=#ffffff;align=center;exitX=0.5;exitY=1;entryX=0;entryY=0.5;" edge="1" parent="1" source="state_pending" target="state_failed">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="215" y="237"/>
+            </Array>
+            <mxPoint as="offset" x="50" y="-14"/>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 6. PROCESSING -> FAILED Nhánh 1: Trigger + Guard: Khấu trừ [Thiếu số dư] -->
+        <mxCell id="edge_proc_failed_deduct" value="Khấu trừ&#xa;[Thiếu số dư]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=9.5;fontColor=#000000;fontStyle=0;labelBackgroundColor=#ffffff;align=right;exitX=0.25;exitY=1;entryX=0.25;entryY=0;" edge="1" parent="1" source="state_processing" target="state_failed">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" x="-14" y="0"/>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 7. PROCESSING -> FAILED Nhánh 2: Trigger + Guard / Action: Gạch nợ [Thất bại] / Hoàn tiền -->
+        <mxCell id="edge_proc_failed_saga" value="Gạch nợ [Thất bại]&#xa;/ Hoàn tiền" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=9.5;fontColor=#000000;fontStyle=0;labelBackgroundColor=#ffffff;align=left;exitX=0.75;exitY=1;entryX=0.75;entryY=0;" edge="1" parent="1" source="state_processing" target="state_failed">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" x="14" y="0"/>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 8. FAILED -> Final2: Trigger: Đóng phiên -->
+        <mxCell id="edge_failed_final" value="Đóng phiên" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#000000;strokeWidth=1.1;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;fontStyle=0;labelBackgroundColor=#ffffff;align=center;" edge="1" parent="1" source="state_failed" target="final_failed">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" y="-14"/>
+          </mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
