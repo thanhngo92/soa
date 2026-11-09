@@ -3,15 +3,16 @@ import logging
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 
-from app.config.database import connect_db, close_db
-from app.middlewares.error_middleware import (
+from app.core import (
+    connect_db,
+    close_db,
+    AppError,
     app_error_handler,
     http_error_handler,
     validation_error_handler,
     generic_error_handler,
 )
-from app.utils.error_util import AppError
-from app.routes import router
+from app.notifications import router as notifications_router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] [%(name)s] %(message)s")
 
@@ -28,7 +29,7 @@ app.add_exception_handler(AppError, app_error_handler)
 app.add_exception_handler(HTTPException, http_error_handler)
 app.add_exception_handler(RequestValidationError, validation_error_handler)
 app.add_exception_handler(Exception, generic_error_handler)
-app.include_router(router, prefix="/api/notifications")
+app.include_router(notifications_router, prefix="/api/notifications")
 
 
 @app.get("/health")

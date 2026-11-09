@@ -1,0 +1,100 @@
+from typing import Any
+from fastapi import Request, HTTPException, status, Header, Depends
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import jwt
+from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
+
+from app.core.config import settings
+
+
+# --- Response Utilities ---
+
+def success(data: Any = None, message: str = "Success") -> dict:
+    return {"success": True, "data": data, "message": message}
+
+
+def error(code: str, message: str) -> dict:
+    return {"success": False, "error": {"code": code, "message": message}}
+
+
+class AppError(HTTPException):
+    def __init__(self, code: str, message: str, status_code: int = 400):
+        self.code = code
+        super().__init__(status_code=status_code, detail={"code": code, "message": message})
+
+
+# --- Exception Handlers ---
+
+async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
+    return JSONResponse(status_code=exc.status_code, content={"success": False, "error": exc.detail})
+
+
+async def http_error_handler(request: Request, exc: HTTPException) -> JSONResponse:
+    detail = exc.detail
+    if isinstance(detail, dict) and "code" in detail:
+        error_payload = detail
+    else:
+        error_payload = {"code": "HTTP_ERROR", "message": str(detail)}
+    return JSONResponse(status_code=exc.status_code, content={"success": False, "error": error_payload})
+
+
+async def validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    errors = exc.errors()
+    first_msg = errors[0].get("msg", "Invalid request payload") if errors else "Invalid request payload"
+    loc = ".".join(str(x) for x in errors[0].get("loc", []) if x != "body") if errors else ""
+    message = f"{loc}: {first_msg}" if loc else first_msg
+    return JSONResponse(
+        status_code=400,
+        content={"success": False, "error": {"code": "VALIDATION_ERROR", "message": message}},
+    )
+
+
+async def generic_error_handler(request: Request, exc: Exception) -> JSONResponse:
+    return JSONResponse(
+        status_code=500,
+        content={"success": False, "error": {"code": "INTERNAL_ERROR", "message": str(exc) if str(exc) else "Internal server error"}},
+    )
+
+
+# --- Security & Auth Middlewares ---
+
+_bearer = HTTPBearer()
+_optional_bearer = HTTPBearer(auto_error=False)
+
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(_bearer)) -> dict:
+    try:
+        return jwt.decode(credentials.credentials, settings.JWT_SECRET, algorithms=["HS256"])
+    except ExpiredSignatureError:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail={"code": "TOKEN_EXPIRED", "message": "Token has expired"})
+    except InvalidTokenError:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail={"code": "INVALID_TOKEN", "message": "Invalid token"})
+
+
+async def verify_internal_token(x_internal_token: str = Header(None, alias="X-Internal-Token")):
+    if not x_internal_token or x_internal_token != settings.INTERNAL_SERVICE_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"code": "FORBIDDEN_INTERNAL_ONLY", "message": "Access denied: Internal service operation only."},
+        )
+
+
+async def verify_user_or_internal(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_optional_bearer),
+    x_internal_token: str | None = Header(None, alias="X-Internal-Token"),
+) -> dict:
+    if x_internal_token and x_internal_token == settings.INTERNAL_SERVICE_KEY:
+        return {"role": "internal"}
+    if not credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"code": "UNAUTHORIZED", "message": "Authentication required to query student tuition."},
+        )
+    try:
+        return jwt.decode(credentials.credentials, settings.JWT_SECRET, algorithms=["HS256"])
+    except ExpiredSignatureError:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail={"code": "TOKEN_EXPIRED", "message": "Token has expired"})
+    except InvalidTokenError:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail={"code": "INVALID_TOKEN", "message": "Invalid token"})
