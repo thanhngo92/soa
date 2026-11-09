@@ -38,7 +38,7 @@ export default function HistoryPage() {
 
       {!loading && !error && records.length === 0 && (
         <div className="py-12 text-center text-xs text-muted-foreground border border-dashed rounded-lg bg-card">
-          Chưa có giao dịch thanh toán thành công nào.
+          Chưa có giao dịch nào được ghi nhận.
         </div>
       )}
 
@@ -75,7 +75,16 @@ export default function HistoryPage() {
                       {formatDate(r.completed_at || r.created_at)}
                     </td>
                     <td className="py-3 px-4">
-                      <Badge variant="success">Thành công</Badge>
+                      {r.status === 'SUCCESS' ? (
+                        <Badge variant="success">Thành công</Badge>
+                      ) : (
+                        <div className="flex flex-col gap-1 items-start">
+                          <Badge variant="destructive">Thất bại</Badge>
+                          <span className="text-[11px] text-amber-600 font-semibold whitespace-nowrap">
+                            Đã hoàn tiền (Saga)
+                          </span>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}

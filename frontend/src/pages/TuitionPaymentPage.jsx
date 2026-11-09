@@ -62,6 +62,7 @@ export default function TuitionPaymentPage() {
     setOtpError('')
     setOtpLocked(false)
     setSearchLoading(true)
+    refreshProfile()
 
     try {
       const res = await getTuitionApi(trimmedMssv)
@@ -90,6 +91,10 @@ export default function TuitionPaymentPage() {
   const handleSearch = (e) => {
     if (e) e.preventDefault()
     const trimmed = mssv.trim().toUpperCase()
+    if (!trimmed) {
+      setError('Vui lòng nhập mã số sinh viên')
+      return
+    }
     if (!isValidMssv(trimmed)) {
       setError('Mã số sinh viên cần từ 6 đến 10 ký tự chữ và số')
       return
@@ -105,18 +110,10 @@ export default function TuitionPaymentPage() {
       setAgreedTerms(false)
       setError('')
       setSearchLoading(false)
-      return
+    } else if (tuition && tuition.student_id !== trimmed) {
+      setTuition(null)
+      setAgreedTerms(false)
     }
-    if (!isValidMssv(trimmed)) {
-      return
-    }
-    if (tuition && tuition.student_id === trimmed) {
-      return
-    }
-    const timer = setTimeout(() => {
-      executeSearch(trimmed)
-    }, 350)
-    return () => clearTimeout(timer)
   }, [mssv])
 
   const handleInitiate = async () => {
@@ -125,6 +122,7 @@ export default function TuitionPaymentPage() {
     setOtpError('')
     setOtpLocked(false)
     setPayLoading(true)
+    refreshProfile()
     try {
       const res = await initiatePaymentApi(tuition.student_id)
       const newPaymentId = res.data.data.payment_id
@@ -220,17 +218,9 @@ export default function TuitionPaymentPage() {
           {/* Nhóm 2: Thông tin học phí */}
           <Card className="shadow-xs border">
             <CardHeader className="pt-4 pb-2 px-4">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-semibold text-foreground">
-                  Thông tin học phí
-                </CardTitle>
-                {searchLoading && (
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                    <span>Đang tìm...</span>
-                  </span>
-                )}
-              </div>
+              <CardTitle className="text-sm font-semibold text-foreground">
+                Thông tin học phí
+              </CardTitle>
             </CardHeader>
 
             <CardContent className="p-4 pt-1 space-y-3">
@@ -244,10 +234,17 @@ export default function TuitionPaymentPage() {
                     setMssv(e.target.value)
                     if (error) setError('')
                   }}
-                  className="h-10 text-sm"
+                  className="font-mono uppercase h-10 text-sm"
                 />
                 <Button type="submit" size="sm" className="h-10 px-4 font-medium" disabled={searchLoading || !mssv.trim()}>
-                  Tra cứu
+                  {searchLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+                      <span>Đang tìm...</span>
+                    </>
+                  ) : (
+                    'Tra cứu'
+                  )}
                 </Button>
               </form>
 

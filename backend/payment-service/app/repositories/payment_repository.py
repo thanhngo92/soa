@@ -122,7 +122,7 @@ async def find_by_account(account_id: str | int) -> list[dict]:
     async with pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
             await cur.execute(
-                "SELECT * FROM payments WHERE account_id = %s AND status = 'SUCCESS' ORDER BY completed_at DESC, id DESC LIMIT 100",
+                "SELECT * FROM payments WHERE account_id = %s AND status IN ('SUCCESS', 'FAILED') ORDER BY id DESC LIMIT 100",
                 (int(account_id),),
             )
             rows = await cur.fetchall()

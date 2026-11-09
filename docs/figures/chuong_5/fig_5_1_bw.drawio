@@ -1,0 +1,357 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" version="21.6.8" type="device">
+  <diagram id="ch5_payment_workflow" name="Quy Trinh Thanh Toan Hai Pha">
+    <mxGraphModel dx="1000" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1169" pageHeight="827" background="#ffffff" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ========================================================================= -->
+        <!-- KHỐI 1: KHỞI TẠO THANH TOÁN (PHA 1) - x=20, w=460, h=640 -->
+        <!-- ========================================================================= -->
+        <mxCell id="box_pha1" value="Khởi tạo thanh toán" style="swimlane;whiteSpace=wrap;html=1;startSize=26;rounded=0;strokeWidth=1.2;strokeColor=#000000;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=11;fontStyle=1;fontColor=#000000;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="20" y="20" width="460" height="640" as="geometry"/>
+        </mxCell>
+
+        <!-- Row 1: Start 1: Center X = 110 (x=100, y=35, w=20, h=20) -->
+        <mxCell id="start1" value="" style="ellipse;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="box_pha1">
+          <mxGeometry x="100" y="35" width="20" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Row 2: Action 1.1: Nhập mã sinh viên tra cứu: Center X = 110 (x=25, y=75, w=170, h=32) -->
+        <mxCell id="act1_1" value="Nhập mã sinh viên tra cứu" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="box_pha1">
+          <mxGeometry x="25" y="75" width="170" height="32" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_start1" style="edgeStyle=none;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;endArrow=open;endSize=6;" edge="1" parent="box_pha1" source="start1" target="act1_1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Row 3: Action 1.2: Tra cứu hồ sơ sinh viên: Center X = 110 (x=25, y=125, w=170, h=32) -->
+        <mxCell id="act1_find" value="Tra cứu hồ sơ sinh viên" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="box_pha1">
+          <mxGeometry x="25" y="125" width="170" height="32" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_act1_find" style="edgeStyle=none;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;endArrow=open;endSize=6;" edge="1" parent="box_pha1" source="act1_1" target="act1_find">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Row 4: Decision 1.0: Tồn tại sinh viên?: Center X = 110, Center Y = 188 (x=97, y=175, w=26, h=26) -->
+        <mxCell id="dec1_0" value="" style="rhombus;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;" vertex="1" parent="box_pha1">
+          <mxGeometry x="97" y="175" width="26" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_find_dec0" style="edgeStyle=none;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;endArrow=open;endSize=6;" edge="1" parent="box_pha1" source="act1_find" target="dec1_0">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Response 1.0: Không thấy: Center Y = 188 (y=172, h=32, x=230, w=175) -->
+        <mxCell id="resp1_0" value="Phản hồi: Không tìm thấy sinh viên" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="box_pha1">
+          <mxGeometry x="230" y="172" width="175" height="32" as="geometry"/>
+        </mxCell>
+        <!-- End 1.0: Center Y = 188 (y=178, h=20, x=425, w=20) -->
+        <mxCell id="end1_0_out" value="" style="ellipse;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;" vertex="1" parent="box_pha1">
+          <mxGeometry x="425" y="178" width="20" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="end1_0_in" value="" style="ellipse;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#000000;" vertex="1" parent="box_pha1">
+          <mxGeometry x="429" y="182" width="12" height="12" as="geometry"/>
+        </mxCell>
+        <!-- Horizontal edge: Label sits ABOVE arrow (offset y=-11) -->
+        <mxCell id="e_dec0_resp" value="[Không thấy]" style="edgeStyle=none;rounded=0;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=9.5;fontColor=#000000;endArrow=open;endSize=6;labelBackgroundColor=none;" edge="1" parent="box_pha1" source="dec1_0" target="resp1_0">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" x="0" y="-11"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_resp0_end" style="edgeStyle=none;rounded=0;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;endArrow=open;endSize=6;" edge="1" parent="box_pha1" source="resp1_0" target="end1_0_out">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Row 5: Action 1.3: Kiểm tra công nợ học phí: Center X = 110 (x=25, y=227, w=170, h=32) -->
+        <mxCell id="act1_check" value="Kiểm tra công nợ học phí" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="box_pha1">
+          <mxGeometry x="25" y="227" width="170" height="32" as="geometry"/>
+        </mxCell>
+        <!-- Vertical edge: Label sits to the RIGHT of arrow (offset x=18) -->
+        <mxCell id="e_dec0_actcheck" value="[Tìm thấy]" style="edgeStyle=none;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=9.5;fontColor=#000000;endArrow=open;endSize=6;labelBackgroundColor=none;align=left;" edge="1" parent="box_pha1" source="dec1_0" target="act1_check">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" x="18" y="0"/>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Row 6: Decision 1.1: Trạng thái học phí?: Center X = 110, Center Y = 292 (x=97, y=279, w=26, h=26) -->
+        <mxCell id="dec1_1" value="" style="rhombus;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;" vertex="1" parent="box_pha1">
+          <mxGeometry x="97" y="279" width="26" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_check_dec1" style="edgeStyle=none;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;endArrow=open;endSize=6;" edge="1" parent="box_pha1" source="act1_check" target="dec1_1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Response 1.1: Đã nộp: Center Y = 292 (y=276, h=32, x=230, w=175) -->
+        <mxCell id="resp1_1" value="Phản hồi: Học phí đã thanh toán" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="box_pha1">
+          <mxGeometry x="230" y="276" width="175" height="32" as="geometry"/>
+        </mxCell>
+        <!-- End 1.1: Center Y = 292 (y=282, h=20, x=425, w=20) -->
+        <mxCell id="end1_1_out" value="" style="ellipse;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;" vertex="1" parent="box_pha1">
+          <mxGeometry x="425" y="282" width="20" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="end1_1_in" value="" style="ellipse;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#000000;" vertex="1" parent="box_pha1">
+          <mxGeometry x="429" y="286" width="12" height="12" as="geometry"/>
+        </mxCell>
+        <!-- Horizontal edge: Label sits ABOVE arrow (offset y=-11) -->
+        <mxCell id="e_dec1_resp" value="[Đã nộp]" style="edgeStyle=none;rounded=0;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=9.5;fontColor=#000000;endArrow=open;endSize=6;labelBackgroundColor=none;" edge="1" parent="box_pha1" source="dec1_1" target="resp1_1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" x="0" y="-11"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_resp1_end" style="edgeStyle=none;rounded=0;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;endArrow=open;endSize=6;" edge="1" parent="box_pha1" source="resp1_1" target="end1_1_out">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Row 7: Action 1.4: Kiểm tra số dư tài khoản: Center X = 110 (x=25, y=331, w=170, h=32) -->
+        <mxCell id="act1_2" value="Kiểm tra số dư tài khoản" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="box_pha1">
+          <mxGeometry x="25" y="331" width="170" height="32" as="geometry"/>
+        </mxCell>
+        <!-- Vertical edge: Label sits to the RIGHT of arrow (offset x=18) -->
+        <mxCell id="e_dec1_act2" value="[Chưa nộp]" style="edgeStyle=none;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=9.5;fontColor=#000000;endArrow=open;endSize=6;labelBackgroundColor=none;align=left;" edge="1" parent="box_pha1" source="dec1_1" target="act1_2">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" x="18" y="0"/>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Row 8: Decision 1.2: Số dư đủ?: Center X = 110, Center Y = 396 (x=97, y=383, w=26, h=26) -->
+        <mxCell id="dec1_2" value="" style="rhombus;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;" vertex="1" parent="box_pha1">
+          <mxGeometry x="97" y="383" width="26" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_act2_dec2" style="edgeStyle=none;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;endArrow=open;endSize=6;" edge="1" parent="box_pha1" source="act1_2" target="dec1_2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Response 1.2: Thiếu tiền: Center Y = 396 (y=380, h=32, x=230, w=175) -->
+        <mxCell id="resp1_2" value="Phản hồi: Số dư không đủ" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="box_pha1">
+          <mxGeometry x="230" y="380" width="175" height="32" as="geometry"/>
+        </mxCell>
+        <!-- End 1.2: Center Y = 396 (y=386, h=20, x=425, w=20) -->
+        <mxCell id="end1_2_out" value="" style="ellipse;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;" vertex="1" parent="box_pha1">
+          <mxGeometry x="425" y="386" width="20" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="end1_2_in" value="" style="ellipse;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#000000;" vertex="1" parent="box_pha1">
+          <mxGeometry x="429" y="390" width="12" height="12" as="geometry"/>
+        </mxCell>
+        <!-- Horizontal edge: Label sits ABOVE arrow (offset y=-11) -->
+        <mxCell id="e_dec2_resp" value="[Thiếu tiền]" style="edgeStyle=none;rounded=0;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=9.5;fontColor=#000000;endArrow=open;endSize=6;labelBackgroundColor=none;" edge="1" parent="box_pha1" source="dec1_2" target="resp1_2">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" x="0" y="-11"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_resp2_end" style="edgeStyle=none;rounded=0;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;endArrow=open;endSize=6;" edge="1" parent="box_pha1" source="resp1_2" target="end1_2_out">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Row 9: Action 1.5: Tạo giao dịch PENDING: Center X = 110 (x=25, y=435, w=170, h=32) -->
+        <mxCell id="act1_3" value="Tạo giao dịch PENDING" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="box_pha1">
+          <mxGeometry x="25" y="435" width="170" height="32" as="geometry"/>
+        </mxCell>
+        <!-- Vertical edge: Label sits to the RIGHT of arrow (offset x=18) -->
+        <mxCell id="e_dec2_act3" value="[Đủ tiền]" style="edgeStyle=none;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=9.5;fontColor=#000000;endArrow=open;endSize=6;labelBackgroundColor=none;align=left;" edge="1" parent="box_pha1" source="dec1_2" target="act1_3">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" x="18" y="0"/>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Row 10: Action 1.6: Sinh OTP và gửi qua email: Center X = 110 (x=25, y=485, w=170, h=32) -->
+        <mxCell id="act1_otp" value="Sinh OTP và gửi qua email" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="box_pha1">
+          <mxGeometry x="25" y="485" width="170" height="32" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_act3_otp" style="edgeStyle=none;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;endArrow=open;endSize=6;" edge="1" parent="box_pha1" source="act1_3" target="act1_otp">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Row 11: Response 1.3: Chờ xác thực OTP: Center X = 110 (x=25, y=535, w=170, h=32) -->
+        <mxCell id="resp1_ok" value="Phản hồi: Chờ xác thực OTP" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="box_pha1">
+          <mxGeometry x="25" y="535" width="170" height="32" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_otp_respok" style="edgeStyle=none;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;endArrow=open;endSize=6;" edge="1" parent="box_pha1" source="act1_otp" target="resp1_ok">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Row 12: End 1 OK: Center X = 110 (x=100, y=585, w=20, h=20) -->
+        <mxCell id="end1_ok_out" value="" style="ellipse;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;" vertex="1" parent="box_pha1">
+          <mxGeometry x="100" y="585" width="20" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="end1_ok_in" value="" style="ellipse;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#000000;" vertex="1" parent="box_pha1">
+          <mxGeometry x="104" y="589" width="12" height="12" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_respok_end" style="edgeStyle=none;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;endArrow=open;endSize=6;" edge="1" parent="box_pha1" source="resp1_ok" target="end1_ok_out">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+
+        <!-- ========================================================================= -->
+        <!-- KHỐI 2: XÁC NHẬN THANH TOÁN (PHA 2) - x=480, w=460, h=640 (GAP = 0) -->
+        <!-- ========================================================================= -->
+        <mxCell id="box_pha2" value="Xác nhận thanh toán" style="swimlane;whiteSpace=wrap;html=1;startSize=26;rounded=0;strokeWidth=1.2;strokeColor=#000000;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=11;fontStyle=1;fontColor=#000000;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="480" y="20" width="460" height="640" as="geometry"/>
+        </mxCell>
+
+        <!-- Row 1: Start 2: Center X = 110 (x=100, y=35, w=20, h=20) -->
+        <mxCell id="start2" value="" style="ellipse;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="box_pha2">
+          <mxGeometry x="100" y="35" width="20" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Row 2: Action 2.1: Nhập mã OTP xác thực: Center X = 110 (x=25, y=75, w=170, h=32) -->
+        <mxCell id="act2_1" value="Nhập mã OTP xác thực" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="box_pha2">
+          <mxGeometry x="25" y="75" width="170" height="32" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_start2" style="edgeStyle=none;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;endArrow=open;endSize=6;" edge="1" parent="box_pha2" source="start2" target="act2_1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Row 3: Action 2.2: Xác thực mã OTP: Center X = 110 (x=25, y=125, w=170, h=32) -->
+        <mxCell id="act2_verify" value="Xác thực mã OTP" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="box_pha2">
+          <mxGeometry x="25" y="125" width="170" height="32" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_act2_1_verify" style="edgeStyle=none;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;endArrow=open;endSize=6;" edge="1" parent="box_pha2" source="act2_1" target="act2_verify">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Row 4: Decision 2.1: Mã hợp lệ?: Center X = 110, Center Y = 188 (x=97, y=175, w=26, h=26) -->
+        <mxCell id="dec2_1" value="" style="rhombus;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;" vertex="1" parent="box_pha2">
+          <mxGeometry x="97" y="175" width="26" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_verify_dec2" style="edgeStyle=none;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;endArrow=open;endSize=6;" edge="1" parent="box_pha2" source="act2_verify" target="dec2_1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Response 2.1: Mã sai: Center Y = 188 (y=172, h=32, x=230, w=175) -->
+        <mxCell id="resp2_1" value="Phản hồi: OTP không hợp lệ" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="box_pha2">
+          <mxGeometry x="230" y="172" width="175" height="32" as="geometry"/>
+        </mxCell>
+        <!-- End 2.1: Center Y = 188 (y=178, h=20, x=425, w=20) -->
+        <mxCell id="end2_1_out" value="" style="ellipse;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;" vertex="1" parent="box_pha2">
+          <mxGeometry x="425" y="178" width="20" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="end2_1_in" value="" style="ellipse;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#000000;" vertex="1" parent="box_pha2">
+          <mxGeometry x="429" y="182" width="12" height="12" as="geometry"/>
+        </mxCell>
+        <!-- Horizontal edge: Label sits ABOVE arrow (offset y=-11) -->
+        <mxCell id="e_dec2_resp" value="[Mã sai]" style="edgeStyle=none;rounded=0;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=9.5;fontColor=#000000;endArrow=open;endSize=6;labelBackgroundColor=none;" edge="1" parent="box_pha2" source="dec2_1" target="resp2_1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" x="0" y="-11"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_resp21_end" style="edgeStyle=none;rounded=0;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;endArrow=open;endSize=6;" edge="1" parent="box_pha2" source="resp2_1" target="end2_1_out">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Row 5: Action 2.3: Khóa phiên PROCESSING: Center X = 110 (x=25, y=227, w=170, h=32) -->
+        <mxCell id="act2_2" value="Khóa phiên PROCESSING" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="box_pha2">
+          <mxGeometry x="25" y="227" width="170" height="32" as="geometry"/>
+        </mxCell>
+        <!-- Vertical edge: Label sits to the RIGHT of arrow (offset x=18) -->
+        <mxCell id="e_dec2_act2_2" value="[Hợp lệ]" style="edgeStyle=none;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=9.5;fontColor=#000000;endArrow=open;endSize=6;labelBackgroundColor=none;align=left;" edge="1" parent="box_pha2" source="dec2_1" target="act2_2">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" x="18" y="0"/>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Row 6: Action 2.4: Khấu trừ số dư tài khoản: Center X = 110 (x=25, y=279, w=170, h=32) -->
+        <mxCell id="act2_3" value="Khấu trừ số dư tài khoản" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="box_pha2">
+          <mxGeometry x="25" y="279" width="170" height="32" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_act2_2_act2_3" style="edgeStyle=none;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;endArrow=open;endSize=6;" edge="1" parent="box_pha2" source="act2_2" target="act2_3">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Row 7: Action 2.5: Gạch nợ học phí PAID: Center X = 110 (x=25, y=331, w=170, h=32) -->
+        <mxCell id="act2_4" value="Gạch nợ học phí PAID" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="box_pha2">
+          <mxGeometry x="25" y="331" width="170" height="32" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_act2_3_act2_4" style="edgeStyle=none;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;endArrow=open;endSize=6;" edge="1" parent="box_pha2" source="act2_3" target="act2_4">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Row 8: Decision 2.2: Gạch nợ thành công?: Center X = 110, Center Y = 396 (x=97, y=383, w=26, h=26) -->
+        <mxCell id="dec2_2" value="" style="rhombus;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;" vertex="1" parent="box_pha2">
+          <mxGeometry x="97" y="383" width="26" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_act2_4_dec2_2" style="edgeStyle=none;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;endArrow=open;endSize=6;" edge="1" parent="box_pha2" source="act2_4" target="dec2_2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- SAGA COMPENSATING BRANCH: Center X = 317.5 (x=230, w=175) -->
+        <!-- Row 8 right: Hoàn tiền bù trừ: Center Y = 396 (y=380, h=32) -->
+        <mxCell id="act_saga" value="Hoàn tiền bù trừ tài khoản" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="box_pha2">
+          <mxGeometry x="230" y="380" width="175" height="32" as="geometry"/>
+        </mxCell>
+        <!-- Horizontal edge: Label sits ABOVE arrow (offset y=-11) -->
+        <mxCell id="e_dec2_2_saga" value="[Thất bại]" style="edgeStyle=none;rounded=0;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=9.5;fontColor=#000000;endArrow=open;endSize=6;labelBackgroundColor=none;" edge="1" parent="box_pha2" source="dec2_2" target="act_saga">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" x="0" y="-11"/>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Row 9 right: Cập nhật FAILED: Center X = 317.5 (x=230, y=435, w=175, h=32) -->
+        <mxCell id="act_fail" value="Cập nhật giao dịch FAILED" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="box_pha2">
+          <mxGeometry x="230" y="435" width="175" height="32" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_saga_fail" style="edgeStyle=none;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;endArrow=open;endSize=6;" edge="1" parent="box_pha2" source="act_saga" target="act_fail">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Row 10 right: Phản hồi: Thanh toán thất bại: Center X = 317.5 (x=230, y=485, w=175, h=32) -->
+        <mxCell id="resp_saga" value="Phản hồi: Thanh toán thất bại" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="box_pha2">
+          <mxGeometry x="230" y="485" width="175" height="32" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_fail_resp" style="edgeStyle=none;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;endArrow=open;endSize=6;" edge="1" parent="box_pha2" source="act_fail" target="resp_saga">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Row 12 right: End Saga: Center X = 317.5 (x=307.5, y=585, w=20, h=20) -->
+        <mxCell id="end_saga_out" value="" style="ellipse;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;" vertex="1" parent="box_pha2">
+          <mxGeometry x="307.5" y="585" width="20" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="end_saga_in" value="" style="ellipse;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#000000;" vertex="1" parent="box_pha2">
+          <mxGeometry x="311.5" y="589" width="12" height="12" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_resp_saga_end" style="edgeStyle=none;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;endArrow=open;endSize=6;" edge="1" parent="box_pha2" source="resp_saga" target="end_saga_out">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- MAIN SUCCESS FLOW CONTINUES ON COLUMN 1: Center X = 110 -->
+        <!-- Row 9: Action 2.6: Cập nhật SUCCESS: Center X = 110 (x=25, y=435, w=170, h=32) -->
+        <mxCell id="act2_5" value="Cập nhật giao dịch SUCCESS" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="box_pha2">
+          <mxGeometry x="25" y="435" width="170" height="32" as="geometry"/>
+        </mxCell>
+        <!-- Vertical edge: Label sits to the RIGHT of arrow (offset x=18) -->
+        <mxCell id="e_dec2_2_act2_5" value="[Thành công]" style="edgeStyle=none;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=9.5;fontColor=#000000;endArrow=open;endSize=6;labelBackgroundColor=none;align=left;" edge="1" parent="box_pha2" source="dec2_2" target="act2_5">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" x="18" y="0"/>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Row 10: Action 2.7: Gửi email biên nhận: Center X = 110 (x=25, y=485, w=170, h=32) -->
+        <mxCell id="act2_6" value="Gửi email biên nhận" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="box_pha2">
+          <mxGeometry x="25" y="485" width="170" height="32" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_act2_5_act2_6" style="edgeStyle=none;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;endArrow=open;endSize=6;" edge="1" parent="box_pha2" source="act2_5" target="act2_6">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Row 11: Response 2.2: Phản hồi: Thanh toán thành công: Center X = 110 (x=25, y=535, w=170, h=32) -->
+        <mxCell id="resp2_ok" value="Phản hồi: Thanh toán thành công" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="box_pha2">
+          <mxGeometry x="25" y="535" width="170" height="32" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_act2_6_respok" style="edgeStyle=none;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;endArrow=open;endSize=6;" edge="1" parent="box_pha2" source="act2_6" target="resp2_ok">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Row 12: End Final: Center X = 110 (x=100, y=585, w=20, h=20) -->
+        <mxCell id="end_final_out" value="" style="ellipse;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=1.2;fillColor=#ffffff;" vertex="1" parent="box_pha2">
+          <mxGeometry x="100" y="585" width="20" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="end_final_in" value="" style="ellipse;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#000000;" vertex="1" parent="box_pha2">
+          <mxGeometry x="104" y="589" width="12" height="12" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_resp2ok_final" style="edgeStyle=none;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;endArrow=open;endSize=6;" edge="1" parent="box_pha2" source="resp2_ok" target="end_final_out">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
