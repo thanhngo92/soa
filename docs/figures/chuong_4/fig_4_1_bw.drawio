@@ -1,0 +1,231 @@
+<mxfile host="Electron" modified="2026-11-09T10:56:00.000Z" agent="Mozilla/5.0" version="21.6.8" type="device">
+  <diagram id="fig_4_1_relational_schema" name="Kien_Truc_CSDL_Phan_Tan">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="960" pageHeight="560" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- ========================================================================= -->
+        <!-- ROW 1 - LEFT: account_db (MySQL 8.0)                                       -->
+        <!-- ========================================================================= -->
+        <mxCell id="box_acc" value="account_db (MySQL 8.0)" style="swimlane;whiteSpace=wrap;html=1;startSize=26;rounded=0;strokeWidth=1.2;strokeColor=#000000;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=12;fontStyle=1;fontColor=#000000;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="20" y="20" width="450" height="250" as="geometry"/>
+        </mxCell>
+
+        <!-- Table: accounts (Parent Table) -->
+        <!-- table_y=55, stu_pk center = 55 + 24 + 10 = 89; here acc_pk center = 55 + 24 + 10 = 89 -->
+        <mxCell id="t_accounts" value="accounts" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=24;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#ffffff;fontColor=#000000;fontFamily=Times New Roman;fontSize=11;" vertex="1" parent="box_acc">
+          <mxGeometry x="15" y="55" width="185" height="178" as="geometry"/>
+        </mxCell>
+        <mxCell id="acc_pk" value="PK  id: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;fontStyle=1;" vertex="1" parent="t_accounts">
+          <mxGeometry y="24" width="185" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="acc_div" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingBottom=-1;points=[];portConstraint=eastwest;strokeColor=#000000;" vertex="1" parent="t_accounts">
+          <mxGeometry y="44" width="185" height="8" as="geometry"/>
+        </mxCell>
+        <mxCell id="acc_1" value="username: VARCHAR(100)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_accounts">
+          <mxGeometry y="52" width="185" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="acc_2" value="password_hash: VARCHAR(255)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_accounts">
+          <mxGeometry y="70" width="185" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="acc_3" value="full_name: VARCHAR(255)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_accounts">
+          <mxGeometry y="88" width="185" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="acc_4" value="email: VARCHAR(255)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_accounts">
+          <mxGeometry y="106" width="185" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="acc_5" value="phone: VARCHAR(50)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_accounts">
+          <mxGeometry y="124" width="185" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="acc_6" value="balance: DECIMAL(15,2)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_accounts">
+          <mxGeometry y="142" width="185" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="acc_7" value="created_at: TIMESTAMP" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_accounts">
+          <mxGeometry y="160" width="185" height="18" as="geometry"/>
+        </mxCell>
+
+        <!-- Table: account_transactions (Child Table) -->
+        <!-- table_y=35, tx_fk center = 35 + 24 + 20 + 10 = 89 -> Exactly equals acc_pk center Y=89! -->
+        <mxCell id="t_tx" value="account_transactions" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=24;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#ffffff;fontColor=#000000;fontFamily=Times New Roman;fontSize=11;" vertex="1" parent="box_acc">
+          <mxGeometry x="250" y="35" width="185" height="196" as="geometry"/>
+        </mxCell>
+        <mxCell id="tx_pk" value="PK  id: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;fontStyle=1;" vertex="1" parent="t_tx">
+          <mxGeometry y="24" width="185" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="tx_fk" value="FK  account_id: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;fontStyle=2;" vertex="1" parent="t_tx">
+          <mxGeometry y="44" width="185" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="tx_div" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingBottom=-1;points=[];portConstraint=eastwest;strokeColor=#000000;" vertex="1" parent="t_tx">
+          <mxGeometry y="64" width="185" height="8" as="geometry"/>
+        </mxCell>
+        <mxCell id="tx_1" value="transaction_type: VARCHAR(20)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_tx">
+          <mxGeometry y="72" width="185" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="tx_2" value="amount: DECIMAL(15,2)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_tx">
+          <mxGeometry y="90" width="185" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="tx_3" value="balance_before: DECIMAL(15,2)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_tx">
+          <mxGeometry y="108" width="185" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="tx_4" value="balance_after: DECIMAL(15,2)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_tx">
+          <mxGeometry y="126" width="185" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="tx_5" value="reference_id: VARCHAR(100)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_tx">
+          <mxGeometry y="144" width="185" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="tx_6" value="created_at: TIMESTAMP" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_tx">
+          <mxGeometry y="162" width="185" height="18" as="geometry"/>
+        </mxCell>
+
+        <!-- Perfectly Straight Horizontal Arrow (tx_fk -> acc_pk) -->
+        <mxCell id="rel_acc" value="1..*" style="edgeStyle=none;rounded=0;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=11;fontColor=#000000;endArrow=open;endSize=6;labelBackgroundColor=none;" edge="1" parent="box_acc" source="tx_fk" target="acc_pk">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" y="-10"/>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ========================================================================= -->
+        <!-- ROW 1 - RIGHT: tuition_db (MySQL 8.0)                                      -->
+        <!-- ========================================================================= -->
+        <mxCell id="box_tui" value="tuition_db (MySQL 8.0)" style="swimlane;whiteSpace=wrap;html=1;startSize=26;rounded=0;strokeWidth=1.2;strokeColor=#000000;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=12;fontStyle=1;fontColor=#000000;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="490" y="20" width="450" height="250" as="geometry"/>
+        </mxCell>
+
+        <!-- Table: students (Parent Table) -->
+        <!-- table_y=55, stu_pk center = 55 + 24 + 10 = 89 -->
+        <mxCell id="t_students" value="students" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=24;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#ffffff;fontColor=#000000;fontFamily=Times New Roman;fontSize=11;" vertex="1" parent="box_tui">
+          <mxGeometry x="15" y="55" width="185" height="124" as="geometry"/>
+        </mxCell>
+        <mxCell id="stu_pk" value="PK  student_id: VARCHAR(20)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;fontStyle=1;" vertex="1" parent="t_students">
+          <mxGeometry y="24" width="185" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="stu_div" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingBottom=-1;points=[];portConstraint=eastwest;strokeColor=#000000;" vertex="1" parent="t_students">
+          <mxGeometry y="44" width="185" height="8" as="geometry"/>
+        </mxCell>
+        <mxCell id="stu_1" value="student_name: VARCHAR(255)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_students">
+          <mxGeometry y="52" width="185" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="stu_2" value="major: VARCHAR(255)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_students">
+          <mxGeometry y="70" width="185" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="stu_3" value="created_at: TIMESTAMP" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_students">
+          <mxGeometry y="88" width="185" height="18" as="geometry"/>
+        </mxCell>
+
+        <!-- Table: tuitions (Child Table) -->
+        <!-- table_y=35, tui_fk center = 35 + 24 + 20 + 10 = 89 -> Exactly equals stu_pk center Y=89! -->
+        <mxCell id="t_tuitions" value="tuitions" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=24;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#ffffff;fontColor=#000000;fontFamily=Times New Roman;fontSize=11;" vertex="1" parent="box_tui">
+          <mxGeometry x="250" y="35" width="185" height="178" as="geometry"/>
+        </mxCell>
+        <mxCell id="tui_pk" value="PK  id: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;fontStyle=1;" vertex="1" parent="t_tuitions">
+          <mxGeometry y="24" width="185" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="tui_fk" value="FK  student_id: VARCHAR(20)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;fontStyle=2;" vertex="1" parent="t_tuitions">
+          <mxGeometry y="44" width="185" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="tui_div" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingBottom=-1;points=[];portConstraint=eastwest;strokeColor=#000000;" vertex="1" parent="t_tuitions">
+          <mxGeometry y="64" width="185" height="8" as="geometry"/>
+        </mxCell>
+        <mxCell id="tui_1" value="semester: VARCHAR(50)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_tuitions">
+          <mxGeometry y="72" width="185" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="tui_2" value="amount: DECIMAL(15,2)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_tuitions">
+          <mxGeometry y="90" width="185" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="tui_3" value="status: VARCHAR(20)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_tuitions">
+          <mxGeometry y="108" width="185" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="tui_4" value="paid_at: TIMESTAMP" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_tuitions">
+          <mxGeometry y="126" width="185" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="tui_5" value="created_at: TIMESTAMP" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_tuitions">
+          <mxGeometry y="144" width="185" height="18" as="geometry"/>
+        </mxCell>
+
+        <!-- Perfectly Straight Horizontal Arrow (tui_fk -> stu_pk) -->
+        <mxCell id="rel_tui" value="1..*" style="edgeStyle=none;rounded=0;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#000000;strokeWidth=1.2;fontFamily=Times New Roman;fontSize=11;fontColor=#000000;endArrow=open;endSize=6;labelBackgroundColor=none;" edge="1" parent="box_tui" source="tui_fk" target="stu_pk">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" y="-10"/>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ========================================================================= -->
+        <!-- ROW 2 - LEFT: payment_db (MySQL 8.0)                                       -->
+        <!-- ========================================================================= -->
+        <mxCell id="box_pay" value="payment_db (MySQL 8.0)" style="swimlane;whiteSpace=wrap;html=1;startSize=26;rounded=0;strokeWidth=1.2;strokeColor=#000000;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=12;fontStyle=1;fontColor=#000000;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="20" y="290" width="450" height="240" as="geometry"/>
+        </mxCell>
+
+        <!-- Table: payments (Single Table, Centered) -->
+        <mxCell id="t_payments" value="payments" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=24;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#ffffff;fontColor=#000000;fontFamily=Times New Roman;fontSize=11;" vertex="1" parent="box_pay">
+          <mxGeometry x="115" y="38" width="220" height="180" as="geometry"/>
+        </mxCell>
+        <mxCell id="pay_pk" value="PK  id: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;fontStyle=1;" vertex="1" parent="t_payments">
+          <mxGeometry y="24" width="220" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="pay_div" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingBottom=-1;points=[];portConstraint=eastwest;strokeColor=#000000;" vertex="1" parent="t_payments">
+          <mxGeometry y="44" width="220" height="8" as="geometry"/>
+        </mxCell>
+        <mxCell id="pay_1" value="account_id: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_payments">
+          <mxGeometry y="52" width="220" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="pay_2" value="tuition_id: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_payments">
+          <mxGeometry y="70" width="220" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="pay_3" value="amount: DECIMAL(15,2)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_payments">
+          <mxGeometry y="88" width="220" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="pay_4" value="status: VARCHAR(20)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_payments">
+          <mxGeometry y="106" width="220" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="pay_5" value="error_code: VARCHAR(50)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_payments">
+          <mxGeometry y="124" width="220" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="pay_6" value="created_at: TIMESTAMP" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_payments">
+          <mxGeometry y="142" width="220" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="pay_7" value="completed_at: TIMESTAMP" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_payments">
+          <mxGeometry y="160" width="220" height="18" as="geometry"/>
+        </mxCell>
+
+        <!-- ========================================================================= -->
+        <!-- ROW 2 - RIGHT: notification_db (MySQL 8.0)                                 -->
+        <!-- ========================================================================= -->
+        <mxCell id="box_notif" value="notification_db (MySQL 8.0)" style="swimlane;whiteSpace=wrap;html=1;startSize=26;rounded=0;strokeWidth=1.2;strokeColor=#000000;fillColor=#ffffff;fontFamily=Times New Roman;fontSize=12;fontStyle=1;fontColor=#000000;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="490" y="290" width="450" height="240" as="geometry"/>
+        </mxCell>
+
+        <!-- Table: otps (Single Table, Centered) -->
+        <mxCell id="t_otps" value="otps" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=24;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#ffffff;fontColor=#000000;fontFamily=Times New Roman;fontSize=11;" vertex="1" parent="box_notif">
+          <mxGeometry x="115" y="44" width="220" height="162" as="geometry"/>
+        </mxCell>
+        <mxCell id="otp_pk" value="PK  id: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;fontStyle=1;" vertex="1" parent="t_otps">
+          <mxGeometry y="24" width="220" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="otp_div" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingBottom=-1;points=[];portConstraint=eastwest;strokeColor=#000000;" vertex="1" parent="t_otps">
+          <mxGeometry y="44" width="220" height="8" as="geometry"/>
+        </mxCell>
+        <mxCell id="otp_1" value="payment_id: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_otps">
+          <mxGeometry y="52" width="220" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="otp_2" value="otp_code: VARCHAR(10)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_otps">
+          <mxGeometry y="70" width="220" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="otp_3" value="expires_at: TIMESTAMP" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_otps">
+          <mxGeometry y="88" width="220" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="otp_4" value="is_used: BOOLEAN" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_otps">
+          <mxGeometry y="106" width="220" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="otp_5" value="attempts: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_otps">
+          <mxGeometry y="124" width="220" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="otp_6" value="created_at: TIMESTAMP" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;fontFamily=Times New Roman;fontSize=10;fontColor=#000000;" vertex="1" parent="t_otps">
+          <mxGeometry y="142" width="220" height="18" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

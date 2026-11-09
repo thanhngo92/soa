@@ -19,17 +19,17 @@ Hệ thống thanh toán học phí đại học tích hợp ngân hàng điện
 
 ### 2.1 Biểu Đồ Ca Sử Dụng (Use Case Diagram)
 
-![Use Case Diagram](./docs/images/use_case_diagram.png)
+![Use Case Diagram](./docs/figures/chuong_1/Hinh_1_1_Use_Case_Diagram.png)
 
 ### 2.2 Sơ Đồ Quan Hệ Thực Thể (ERD - Database-per-Service)
 
-![Database ERD](./docs/images/database_erd.png)
+![Database ERD](./docs/figures/chuong_1/Hinh_1_2_Entity_Relationship_Diagram.png)
 
 ---
 
 ## 3. Kiến Trúc Tổng Thể (Microservices Architecture & Saga Orchestration)
 
-![System Architecture Diagram](./docs/images/system_architecture.png)
+![System Architecture Diagram](./docs/figures/chuong_2/Hinh_2_1_So_Do_Kien_Truc_Microservices.png)
 
 ---
 

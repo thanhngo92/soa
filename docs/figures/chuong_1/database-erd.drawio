@@ -1,0 +1,58 @@
+<mxfile>
+  <diagram id="erd-ibanking" name="Database ERD">
+    <mxGraphModel dx="0" dy="0" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1220" pageHeight="720" math="0" shadow="0" adaptiveColors="none">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="db_acc" value="account_db" style="swimlane;startSize=28;fillColor=#FFFFFF;swimlaneFillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontStyle=1;fontSize=13;fontFamily=Helvetica;fontColor=#000000;collapsible=0;pointerEvents=0;html=1;" vertex="1" parent="1">
+          <mxGeometry x="25" y="25" width="320" height="665" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_acc" value="&lt;p style=&quot;margin:0px;padding:6px 0px;text-align:center;background:#FFFFFF;color:#000000;border-bottom:1px solid #000000;font-size:12px;&quot;&gt;&lt;b&gt;accounts&lt;/b&gt;&lt;/p&gt;&lt;p style=&quot;margin:0px;padding:6px 10px;line-height:1.45;font-family:Consolas,monospace;font-size:11px;color:#000000;&quot;&gt;&lt;b&gt;id&lt;/b&gt; – &lt;b&gt;PK&lt;/b&gt; (INT AUTO_INCREMENT)&lt;br&gt;username – &lt;b&gt;UK&lt;/b&gt; (VARCHAR(100))&lt;br&gt;password_hash (VARCHAR(255))&lt;br&gt;full_name (VARCHAR(255))&lt;br&gt;email (VARCHAR(255))&lt;br&gt;phone (VARCHAR(50))&lt;br&gt;balance (DECIMAL(15,2))&lt;br&gt;created_at (TIMESTAMP)&lt;br&gt;updated_at (TIMESTAMP)&lt;/p&gt;" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;" vertex="1" parent="db_acc">
+          <mxGeometry x="20" y="45" width="280" height="215" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_tx" value="&lt;p style=&quot;margin:0px;padding:6px 0px;text-align:center;background:#FFFFFF;color:#000000;border-bottom:1px solid #000000;font-size:12px;&quot;&gt;&lt;b&gt;account_transactions&lt;/b&gt;&lt;/p&gt;&lt;p style=&quot;margin:0px;padding:6px 10px;line-height:1.45;font-family:Consolas,monospace;font-size:11px;color:#000000;&quot;&gt;&lt;b&gt;id&lt;/b&gt; – &lt;b&gt;PK&lt;/b&gt; (INT AUTO_INCREMENT)&lt;br&gt;&lt;i&gt;account_id&lt;/i&gt; – &lt;i&gt;FK&lt;/i&gt; (INT)&lt;br&gt;transaction_type (VARCHAR(20))&lt;br&gt;amount (DECIMAL(15,2))&lt;br&gt;balance_before (DECIMAL(15,2))&lt;br&gt;balance_after (DECIMAL(15,2))&lt;br&gt;&lt;i&gt;reference_id&lt;/i&gt; (VARCHAR(100))&lt;br&gt;description (VARCHAR(255))&lt;br&gt;created_at (TIMESTAMP)&lt;/p&gt;" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;" vertex="1" parent="db_acc">
+          <mxGeometry x="20" y="385" width="280" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="e_fk_acc_tx" value="account_id" style="endArrow=ERzeroToMany;startArrow=ERmandOne;endSize=10;startSize=10;endFill=0;startFill=0;strokeColor=#000000;strokeWidth=1.4;fontFamily=Helvetica;fontSize=11;fontColor=#000000;html=1;labelBackgroundColor=#FFFFFF;" edge="1" parent="db_acc" source="tbl_acc" target="tbl_tx">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="db_pay" value="payment_db" style="swimlane;startSize=28;fillColor=#FFFFFF;swimlaneFillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontStyle=1;fontSize=13;fontFamily=Helvetica;fontColor=#000000;collapsible=0;pointerEvents=0;html=1;" vertex="1" parent="1">
+          <mxGeometry x="450" y="25" width="320" height="305" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_pay" value="&lt;p style=&quot;margin:0px;padding:6px 0px;text-align:center;background:#FFFFFF;color:#000000;border-bottom:1px solid #000000;font-size:12px;&quot;&gt;&lt;b&gt;payments&lt;/b&gt;&lt;/p&gt;&lt;p style=&quot;margin:0px;padding:6px 10px;line-height:1.45;font-family:Consolas,monospace;font-size:11px;color:#000000;&quot;&gt;&lt;b&gt;id&lt;/b&gt; – &lt;b&gt;PK&lt;/b&gt; (INT AUTO_INCREMENT)&lt;br&gt;&lt;i&gt;account_id&lt;/i&gt; (INT)&lt;br&gt;&lt;i&gt;tuition_id&lt;/i&gt; (INT)&lt;br&gt;amount (DECIMAL(15,2))&lt;br&gt;status (VARCHAR(20))&lt;br&gt;error_code (VARCHAR(50))&lt;br&gt;created_at (TIMESTAMP)&lt;br&gt;completed_at (TIMESTAMP)&lt;/p&gt;" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;" vertex="1" parent="db_pay">
+          <mxGeometry x="20" y="45" width="280" height="205" as="geometry" />
+        </mxCell>
+        <mxCell id="db_notif" value="notification_db" style="swimlane;startSize=28;fillColor=#FFFFFF;swimlaneFillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontStyle=1;fontSize=13;fontFamily=Helvetica;fontColor=#000000;collapsible=0;pointerEvents=0;html=1;" vertex="1" parent="1">
+          <mxGeometry x="450" y="425" width="320" height="265" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_otp" value="&lt;p style=&quot;margin:0px;padding:6px 0px;text-align:center;background:#FFFFFF;color:#000000;border-bottom:1px solid #000000;font-size:12px;&quot;&gt;&lt;b&gt;otps&lt;/b&gt;&lt;/p&gt;&lt;p style=&quot;margin:0px;padding:6px 10px;line-height:1.45;font-family:Consolas,monospace;font-size:11px;color:#000000;&quot;&gt;&lt;b&gt;id&lt;/b&gt; – &lt;b&gt;PK&lt;/b&gt; (INT AUTO_INCREMENT)&lt;br&gt;&lt;i&gt;payment_id&lt;/i&gt; (INT)&lt;br&gt;otp_code (VARCHAR(10))&lt;br&gt;expires_at (TIMESTAMP)&lt;br&gt;is_used (BOOLEAN)&lt;br&gt;attempts (INT)&lt;br&gt;created_at (TIMESTAMP)&lt;/p&gt;" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;" vertex="1" parent="db_notif">
+          <mxGeometry x="20" y="55" width="280" height="185" as="geometry" />
+        </mxCell>
+        <mxCell id="db_tui" value="tuition_db" style="swimlane;startSize=28;fillColor=#FFFFFF;swimlaneFillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.5;fontStyle=1;fontSize=13;fontFamily=Helvetica;fontColor=#000000;collapsible=0;pointerEvents=0;html=1;" vertex="1" parent="1">
+          <mxGeometry x="875" y="25" width="320" height="665" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_tui" value="&lt;p style=&quot;margin:0px;padding:6px 0px;text-align:center;background:#FFFFFF;color:#000000;border-bottom:1px solid #000000;font-size:12px;&quot;&gt;&lt;b&gt;tuitions&lt;/b&gt;&lt;/p&gt;&lt;p style=&quot;margin:0px;padding:6px 10px;line-height:1.45;font-family:Consolas,monospace;font-size:11px;color:#000000;&quot;&gt;&lt;b&gt;id&lt;/b&gt; – &lt;b&gt;PK&lt;/b&gt; (INT AUTO_INCREMENT)&lt;br&gt;&lt;i&gt;student_id&lt;/i&gt; – &lt;i&gt;FK&lt;/i&gt;, &lt;b&gt;UK&lt;/b&gt; (VARCHAR(20))&lt;br&gt;semester – &lt;b&gt;UK&lt;/b&gt; (VARCHAR(50))&lt;br&gt;amount (DECIMAL(15,2))&lt;br&gt;status (VARCHAR(20))&lt;br&gt;paid_at (TIMESTAMP)&lt;br&gt;created_at (TIMESTAMP)&lt;/p&gt;" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;" vertex="1" parent="db_tui">
+          <mxGeometry x="20" y="45" width="280" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_stu" value="&lt;p style=&quot;margin:0px;padding:6px 0px;text-align:center;background:#FFFFFF;color:#000000;border-bottom:1px solid #000000;font-size:12px;&quot;&gt;&lt;b&gt;students&lt;/b&gt;&lt;/p&gt;&lt;p style=&quot;margin:0px;padding:6px 10px;line-height:1.45;font-family:Consolas,monospace;font-size:11px;color:#000000;&quot;&gt;&lt;b&gt;student_id&lt;/b&gt; – &lt;b&gt;PK&lt;/b&gt; (VARCHAR(20))&lt;br&gt;student_name (VARCHAR(255))&lt;br&gt;major (VARCHAR(255))&lt;br&gt;created_at (TIMESTAMP)&lt;/p&gt;" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;" vertex="1" parent="db_tui">
+          <mxGeometry x="20" y="385" width="280" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="e_fk_stu_tui" value="student_id" style="endArrow=ERoneToMany;startArrow=ERmandOne;endSize=10;startSize=10;endFill=0;startFill=0;strokeColor=#000000;strokeWidth=1.4;fontFamily=Helvetica;fontSize=11;fontColor=#000000;html=1;labelBackgroundColor=#FFFFFF;" edge="1" parent="db_tui" source="tbl_stu" target="tbl_tui">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_lr_acc_pay" value="account_id" style="dashed=1;dashPattern=6 4;endArrow=ERzeroToMany;startArrow=ERmandOne;endSize=10;startSize=10;endFill=0;startFill=0;strokeColor=#000000;strokeWidth=1.3;fontFamily=Helvetica;fontSize=11;fontStyle=2;fontColor=#000000;html=1;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="tbl_acc" target="tbl_pay">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_lr_tui_pay" value="tuition_id" style="dashed=1;dashPattern=6 4;endArrow=ERzeroToMany;startArrow=ERmandOne;endSize=10;startSize=10;endFill=0;startFill=0;strokeColor=#000000;strokeWidth=1.3;fontFamily=Helvetica;fontSize=11;fontStyle=2;fontColor=#000000;html=1;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="tbl_tui" target="tbl_pay">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_lr_pay_otp" value="payment_id" style="dashed=1;dashPattern=6 4;endArrow=ERoneToMany;startArrow=ERmandOne;endSize=10;startSize=10;endFill=0;startFill=0;strokeColor=#000000;strokeWidth=1.3;fontFamily=Helvetica;fontSize=11;fontStyle=2;fontColor=#000000;html=1;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="tbl_pay" target="tbl_otp">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_lr_pay_tx" value="reference_id" style="dashed=1;dashPattern=6 4;endArrow=ERzeroToMany;startArrow=ERmandOne;endSize=10;startSize=10;endFill=0;startFill=0;strokeColor=#000000;strokeWidth=1.3;fontFamily=Helvetica;fontSize=11;fontStyle=2;fontColor=#000000;html=1;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="tbl_pay" target="tbl_tx">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
