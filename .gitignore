@@ -56,3 +56,5 @@ lerna-debug.log*
 # ── Docker Data & Local Volumes ───────────────────────────────────────────────
 mysql_data/
 scratch/
+# Office Temporary Files
+~$*.docx
