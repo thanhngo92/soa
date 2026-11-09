@@ -58,3 +58,5 @@ mysql_data/
 scratch/
 # Office Temporary Files
 ~$*.docx
+test_cover*
+*.tmp
