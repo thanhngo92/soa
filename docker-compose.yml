@@ -92,9 +92,12 @@ services:
       MYSQL_PASSWORD: rootpassword
       MYSQL_DATABASE: notification_db
       INTERNAL_SERVICE_KEY: super_internal_service_secret_key_2026
-      SMTP_HOST: mailpit
-      SMTP_PORT: 1025
-      MAIL_FROM: noreply@ibanking.local
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_USE_TLS: ${SMTP_USE_TLS:-false}
+      MAIL_FROM: ${MAIL_FROM:-noreply@ibanking.local}
     depends_on:
       - mysql
       - mailpit

@@ -35,9 +35,24 @@ def _send_sync(to: str, subject: str, body: str) -> None:
     msg["Subject"] = subject
     msg.attach(MIMEText(body, "plain", "utf-8"))
 
-    with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as s:
-        s.sendmail(settings.MAIL_FROM, to, msg.as_string())
-    logger.info(f"Email sent to '{to}' with subject '{subject}'")
+    if settings.is_real_smtp:
+        # Cấu hình có dữ liệu thật (Gmail / External SMTP) -> Gửi qua SMTP thật
+        if settings.SMTP_PORT == 465:
+            with smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as s:
+                s.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+                s.sendmail(settings.MAIL_FROM, to, msg.as_string())
+        else:
+            with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as s:
+                if settings.SMTP_USE_TLS:
+                    s.starttls()
+                s.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+                s.sendmail(settings.MAIL_FROM, to, msg.as_string())
+        logger.info(f"Email sent via REAL SMTP ({settings.SMTP_HOST}) to '{to}' with subject '{subject}'")
+    else:
+        # Cấu hình là None / rỗng / mailpit -> Gửi trực tiếp qua Mailpit (No Auth, No TLS)
+        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as s:
+            s.sendmail(settings.MAIL_FROM, to, msg.as_string())
+        logger.info(f"Email sent via MAILPIT ({settings.SMTP_HOST}:{settings.SMTP_PORT}) to '{to}' with subject '{subject}'")
 
 
 async def _send(to: str, subject: str, body: str, raise_on_error: bool = False) -> None:
