@@ -13,7 +13,7 @@ async def get_account_balance(http: httpx.AsyncClient, token: str) -> float:
         r = await http.get(
             f"{settings.ACCOUNT_SERVICE_URL}/api/accounts/me",
             headers={"Authorization": f"Bearer {token}"},
-            timeout=10.0,
+            timeout=25.0,
         )
         data = r.json()
         if not data.get("success"):
@@ -39,7 +39,7 @@ async def deduct_account(
             f"{settings.ACCOUNT_SERVICE_URL}/api/accounts/deduct",
             json=payload,
             headers=headers,
-            timeout=10.0,
+            timeout=25.0,
         )
         data = r.json()
         if not data.get("success"):
@@ -65,7 +65,7 @@ async def refund_account(
             f"{settings.ACCOUNT_SERVICE_URL}/api/accounts/refund",
             json=payload,
             headers=headers,
-            timeout=10.0,
+            timeout=25.0,
         )
         data = r.json()
         if not data.get("success"):
@@ -84,7 +84,7 @@ async def get_tuition(http: httpx.AsyncClient, mssv: str) -> dict:
         r = await http.get(
             f"{settings.TUITION_SERVICE_URL}/api/tuitions/students/{mssv}",
             headers={"X-Internal-Token": settings.INTERNAL_SERVICE_KEY},
-            timeout=10.0,
+            timeout=25.0,
         )
         data = r.json()
         if not data.get("success"):
@@ -102,7 +102,7 @@ async def get_tuition_by_id(http: httpx.AsyncClient, tuition_id: int) -> dict:
         r = await http.get(
             f"{settings.TUITION_SERVICE_URL}/api/tuitions/records/{tuition_id}",
             headers={"X-Internal-Token": settings.INTERNAL_SERVICE_KEY},
-            timeout=10.0,
+            timeout=25.0,
         )
         data = r.json()
         if not data.get("success"):
@@ -128,7 +128,7 @@ async def pay_tuition(
             f"{settings.TUITION_SERVICE_URL}/api/tuitions/pay",
             json=payload,
             headers={"X-Internal-Token": settings.INTERNAL_SERVICE_KEY},
-            timeout=10.0,
+            timeout=25.0,
         )
         data = r.json()
         if not data.get("success"):
@@ -167,7 +167,7 @@ async def send_otp(
             f"{settings.NOTIFICATION_SERVICE_URL}/api/notifications/otp/generate",
             json=payload,
             headers={"X-Internal-Token": settings.INTERNAL_SERVICE_KEY},
-            timeout=10.0,
+            timeout=25.0,
         )
         data = r.json()
         if r.status_code != 200 or not data.get("success"):
@@ -186,7 +186,7 @@ async def verify_otp(http: httpx.AsyncClient, payment_id: str, otp_code: str) ->
             f"{settings.NOTIFICATION_SERVICE_URL}/api/notifications/otp/verify",
             json={"payment_id": payment_id, "otp_code": otp_code},
             headers={"X-Internal-Token": settings.INTERNAL_SERVICE_KEY},
-            timeout=10.0,
+            timeout=25.0,
         )
         data = r.json()
         if r.status_code == 200 and data.get("success"):
@@ -208,7 +208,7 @@ async def send_success_email(http: httpx.AsyncClient, payload: dict) -> None:
             f"{settings.NOTIFICATION_SERVICE_URL}/api/notifications/email/success",
             json=payload,
             headers={"X-Internal-Token": settings.INTERNAL_SERVICE_KEY},
-            timeout=10.0,
+            timeout=25.0,
         )
     except Exception as exc:
         logger.error(f"Failed to send success email via notification-service: {exc}")

@@ -92,6 +92,7 @@ services:
       MYSQL_PASSWORD: rootpassword
       MYSQL_DATABASE: notification_db
       INTERNAL_SERVICE_KEY: super_internal_service_secret_key_2026
+      USE_REAL_SMTP: 
       SMTP_HOST: ${SMTP_HOST:-mailpit}
       SMTP_PORT: ${SMTP_PORT:-1025}
       SMTP_USER: ${SMTP_USER:-}

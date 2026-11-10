@@ -109,16 +109,13 @@ async def get_otp_from_mailpit(
 def _reset_tuition_and_test_data(student_ids: list[str] | tuple[str, ...]):
     sids_sql = ", ".join(f"'{sid}'" for sid in student_ids)
     sql = (
-        f"DELETE FROM account_db.account_transactions WHERE reference_id IN "
-        f"(SELECT CAST(id AS CHAR) FROM payment_db.payments WHERE tuition_id IN "
-        f"(SELECT id FROM tuition_db.tuitions WHERE student_id IN ({sids_sql}))); "
         f"DELETE FROM payment_db.payments WHERE tuition_id IN "
         f"(SELECT id FROM tuition_db.tuitions WHERE student_id IN ({sids_sql})); "
         f"UPDATE tuition_db.tuitions SET status = 'UNPAID', paid_at = NULL "
         f"WHERE student_id IN ({sids_sql});"
     )
     res = subprocess.run(
-        ["docker", "compose", "exec", "-T", "mysql", "mysql", "-P8552", "-uroot", "-prootpassword", "-e", sql],
+        ["docker", "compose", "exec", "-T", "mysql", "mysql", "-uroot", "-prootpassword", "-e", sql],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         check=False,
@@ -151,11 +148,11 @@ async def _ensure_balance(client: httpx.AsyncClient, token: str, target_balance:
         )
 
 
-# [Rubric Tiêu chí 2: Kiến trúc Microservices - Kiểm thử Workflow Guard]
+# Kịch bản CC-01: Kiểm soát phân quyền luồng nghiệp vụ qua API Gateway (Workflow Guard)
 # - Nghiệp vụ: Chặn mọi truy cập trực tiếp từ client ngoài vào endpoint nội bộ (pay, refund, otp).
 # - Kỹ thuật: Gateway trả về 403 WORKFLOW_VIOLATION; Port nội bộ từ chối khi thiếu X-Internal-Token.
 async def test_scenario_0_workflow_guard(client: httpx.AsyncClient) -> bool:
-    log_header("KỊCH BẢN 0: WORKFLOW GUARD (NGĂN CHẶN TRUY CẬP TRỰC TIẾP ENDPOINT NỘI BỘ)")
+    log_header("KỊCH BẢN CC-01: BẢO VỆ PHÂN QUYỀN NỘI BỘ VÀ KIỂM SOÁT LUỒNG NGHIỆP VỤ")
     log_info("Mục tiêu: Đảm bảo Client bên ngoài không thể gọi trực tiếp các thao tác nội bộ")
     log_info("(Ví dụ: gạch nợ học phí, hoàn tiền tài khoản, tạo OTP trực tiếp qua Gateway)")
 
@@ -212,11 +209,11 @@ async def test_scenario_0_workflow_guard(client: httpx.AsyncClient) -> bool:
     return passed
 
 
-# [Rubric Tiêu chí 6: Kiểm soát tranh chấp đồng thời - Chống thấu chi số dư (E2E Overdraw Protection)]
+# Kịch bản CC-02: Kiểm soát tranh chấp số dư đồng thời
 # - Nghiệp vụ: 1 tài khoản xác nhận đồng thời 2 giao dịch có tổng tiền vượt quá số dư khả dụng.
 # - Kỹ thuật: Khóa bi quan FOR UPDATE tại Account Service đảm bảo chính xác 1 GD thành công, 1 GD từ chối.
 async def test_scenario_1_overdraw(client: httpx.AsyncClient):
-    log_header("KỊCH BẢN 1: NHIỀU GIAO DỊCH ĐỒNG THỜI TRÊN CÙNG MỘT TÀI KHOẢN (CHỐNG THẤU CHI E2E)")
+    log_header("KỊCH BẢN CC-02: XỬ LÝ NHIỀU GIAO DỊCH ĐỒNG THỜI TRÊN CÙNG MỘT TÀI KHOẢN")
     student_a = "521H0001"
     student_b = "521H0002"
 
@@ -244,6 +241,13 @@ async def test_scenario_1_overdraw(client: httpx.AsyncClient):
         headers={"Authorization": f"Bearer {token}"},
         json={"student_id": student_b},
     )
+
+    if r_init_a.status_code != 200 or not r_init_a.json().get("success"):
+        log_fail(f"Khởi tạo GD A thất bại: {r_init_a.status_code} {r_init_a.text}")
+        return False
+    if r_init_b.status_code != 200 or not r_init_b.json().get("success"):
+        log_fail(f"Khởi tạo GD B thất bại: {r_init_b.status_code} {r_init_b.text}")
+        return False
 
     pay_id_a = r_init_a.json()["data"]["payment_id"]
     pay_id_b = r_init_b.json()["data"]["payment_id"]
@@ -315,11 +319,11 @@ async def test_scenario_1_overdraw(client: httpx.AsyncClient):
     return passed
 
 
-# [Rubric Tiêu chí 6: Saga Rollback & Bù trừ giao dịch - 2 tài khoản thanh toán cùng 1 học phí]
+# Kịch bản CC-03: Giao dịch phân tán và bù trừ Saga khi trùng lặp gạch nợ học phí
 # - Nghiệp vụ: 2 người cùng đóng học phí cho 1 sinh viên tại cùng thời điểm.
 # - Kỹ thuật: 1 người thành công gạch nợ; người còn lại bị 409 conflict và được Saga hoàn tiền tự động 100%.
 async def test_scenario_2_double_payment(client: httpx.AsyncClient):
-    log_header("KỊCH BẢN 2: NHIỀU TÀI KHOẢN CÙNG THANH TOÁN 1 KHOẢN HỌC PHÍ (SAGA ROLLBACK)")
+    log_header("KỊCH BẢN CC-03: XỬ LÝ NHIỀU TÀI KHOẢN CÙNG THANH TOÁN MỘT KHOẢN HỌC PHÍ")
     student_id = "523H0089"
     log_info(f"Mã sinh viên nợ học phí: {student_id} (Số tiền: 4,720,000 VND)")
 
@@ -348,6 +352,13 @@ async def test_scenario_2_double_payment(client: httpx.AsyncClient):
         headers={"Authorization": f"Bearer {token_2}"},
         json={"student_id": student_id},
     )
+
+    if r1.status_code != 200 or not r1.json().get("success"):
+        log_fail(f"Khởi tạo GD 1 thất bại: {r1.status_code} {r1.text}")
+        return False
+    if r2.status_code != 200 or not r2.json().get("success"):
+        log_fail(f"Khởi tạo GD 2 thất bại: {r2.status_code} {r2.text}")
+        return False
 
     p1_data = r1.json()["data"]
     p2_data = r2.json()["data"]
@@ -433,11 +444,11 @@ async def test_scenario_2_double_payment(client: httpx.AsyncClient):
     return passed
 
 
-# [Rubric Tiêu chí 6: Kiểm thử tính bất biến (Idempotency Key tại Gateway)]
+# Kịch bản CC-04: Kiểm soát yêu cầu mạng trùng lặp với Idempotency-Key tại API Gateway
 # - Nghiệp vụ: Chặn double-click khi mạng lag; gửi lại request với cùng key nhận response từ cache.
 # - Kỹ thuật: Gateway nhận diện Idempotency-Key, trả X-Idempotent-Replay: true, tài khoản chỉ bị trừ tiền đúng 1 lần.
 async def test_scenario_3_idempotency_key(client: httpx.AsyncClient) -> bool:
-    log_header("KỊCH BẢN 3: KIỂM THỬ TÍNH BẤT BIẾN (IDEMPOTENCY-KEY TẠI GATEWAY)")
+    log_header("KỊCH BẢN CC-04: KIỂM SOÁT YÊU CẦU MẠNG TRÙNG LẶP VỚI IDEMPOTENCY-KEY TẠI GATEWAY")
     log_info("Mục tiêu: Gửi 2 request xác nhận thanh toán với cùng Idempotency-Key:")
     log_info("  - Lần 1: Xử lý bình thường (X-Idempotent-Replay: false).")
     log_info("  - Lần 2: Gateway chặn từ ngoài và trả về response cache (X-Idempotent-Replay: true, X-Cache-Lookup: HIT).")
@@ -526,7 +537,7 @@ async def test_scenario_3_idempotency_key(client: httpx.AsyncClient) -> bool:
 async def main():
     target_scenario = sys.argv[1].strip() if len(sys.argv) > 1 else "all"
 
-    print(f"\n{BOLD}{CYAN}KIỂM THỬ TỰ ĐỘNG CONCURRENCY & TRANSACTION CONSISTENCY (SOA iBanking){RESET}")
+    print(f"\n{BOLD}{CYAN}BÁO CÁO KIỂM THỬ XỬ LÝ ĐỒNG THỜI VÀ TÍNH NHẤT QUÁN DỮ LIỆU {RESET}")
     print(f"Target API Gateway: {GATEWAY_URL}")
     print(f"Target Mailpit     : {MAILPIT_URL}\n")
 
@@ -541,19 +552,19 @@ async def main():
 
         results = []
         if target_scenario in ["0", "all"]:
-            results.append(("Kịch bản 0", await test_scenario_0_workflow_guard(client)))
+            results.append(("Kịch bản CC-01 (Workflow Guard)", await test_scenario_0_workflow_guard(client)))
         if target_scenario in ["1", "all"]:
-            results.append(("Kịch bản 1", await test_scenario_1_overdraw(client)))
+            results.append(("Kịch bản CC-02 (Chống thấu chi tài khoản)", await test_scenario_1_overdraw(client)))
         if target_scenario in ["2", "all"]:
-            results.append(("Kịch bản 2", await test_scenario_2_double_payment(client)))
+            results.append(("Kịch bản CC-03 (Saga Bù trừ học phí)", await test_scenario_2_double_payment(client)))
         if target_scenario in ["3", "all"]:
-            results.append(("Kịch bản 3", await test_scenario_3_idempotency_key(client)))
+            results.append(("Kịch bản CC-04 (Kiểm soát Idempotency-Key)", await test_scenario_3_idempotency_key(client)))
 
         log_header("TỔNG KẾT KẾT QUẢ KIỂM THỬ")
         all_passed = all(r[1] for r in results)
         if all_passed:
             passed_count = len([r for r in results if r[1]])
-            print(f"\n{GREEN}{BOLD}CÁC BÀI KIỂM THỬ ĐÃ HOÀN TẤT THÀNH CÔNG (PASS {passed_count}/{len(results)}){RESET}\n")
+            print(f"\n{GREEN}{BOLD}TẤT CẢ {passed_count} KỊCH BẢN KIỂM THỬ ĐÃ ĐẠT (PASS {passed_count}/{len(results)}){RESET}\n")
         else:
             print(f"\n{RED}{BOLD}CÓ BÀI KIỂM THỬ KHÔNG THÀNH CÔNG{RESET}\n")
             sys.exit(1)

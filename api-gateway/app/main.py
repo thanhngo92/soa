@@ -2,6 +2,8 @@ import asyncio
 from contextlib import asynccontextmanager
 import hashlib
 from fastapi import FastAPI, Request, Response
+from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
+from fastapi.responses import JSONResponse
 import httpx
 
 from app.config.env import SERVICE_MAP
@@ -18,7 +20,7 @@ async def lifespan(app: FastAPI):
     await app.state.http.aclose()
 
 
-app = FastAPI(title="API Gateway", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="API Gateway", version="1.0.0", lifespan=lifespan, openapi_url=None)
 
 register_cors_middleware(app)
 app.add_middleware(RequestLoggingMiddleware)
@@ -150,3 +152,88 @@ async def health(request: Request):
         "gateway": "ok",
         "services": services_status,
     }
+
+
+# [Swagger Aggregator: Gộp toàn bộ tài liệu OpenAPI từ 4 microservices vào một trang duy nhất]
+SERVICE_TAG_MAP = {
+    "accounts": "Account Service",
+    "tuitions": "Tuition Service",
+    "payments": "Payment Service",
+    "notifications": "Notification Service",
+}
+
+
+@app.get("/openapi.json", include_in_schema=False)
+async def custom_openapi(request: Request):
+    http: httpx.AsyncClient = request.app.state.http
+
+    master_schema = {
+        "openapi": "3.1.0",
+        "info": {
+            "title": "SOA iBanking API",
+            "version": "1.0.0",
+            "description": "API Gateway",
+        },
+        "paths": {},
+        "components": {"schemas": {}},
+        "tags": [
+            {"name": "API Gateway"},
+            {"name": "Account Service"},
+            {"name": "Tuition Service"},
+            {"name": "Payment Service"},
+            {"name": "Notification Service"},
+        ],
+    }
+
+    # Giữ lại endpoint Health Check của Gateway
+    master_schema["paths"]["/health"] = {
+        "get": {
+            "summary": "Health Check",
+            "tags": ["API Gateway"],
+            "responses": {"200": {"description": "OK"}},
+        }
+    }
+
+    async def _fetch_openapi(service_name: str, base_url: str):
+        try:
+            res = await http.get(f"{base_url}/openapi.json", timeout=3.0)
+            if res.status_code == 200:
+                data = res.json()
+                paths = data.get("paths", {})
+                for path, methods in paths.items():
+                    if path == "/health":
+                        continue
+                    for method, spec in methods.items():
+                        if isinstance(spec, dict):
+                            spec["tags"] = [SERVICE_TAG_MAP.get(service_name, service_name)]
+                    master_schema["paths"][path] = methods
+
+                schemas = data.get("components", {}).get("schemas", {})
+                master_schema["components"]["schemas"].update(schemas)
+        except Exception:
+            pass
+
+    await asyncio.gather(*(_fetch_openapi(name, url) for name, url in SERVICE_MAP.items()))
+    return JSONResponse(master_schema)
+
+
+@app.get("/docs", include_in_schema=False)
+async def swagger_ui_html():
+    return get_swagger_ui_html(
+        openapi_url="/openapi.json",
+        title="SOA iBanking - Aggregated API Docs",
+        swagger_ui_parameters={
+            "docExpansion": "list",  # Tự động mở rộng danh sách các tag/service
+            "filter": True,          # Bật thanh tìm kiếm filter theo tên API
+            "tagsSorter": "alpha",   # Sắp xếp theo thứ tự 0, 1, 2, 3, 4
+        },
+    )
+
+
+@app.get("/redoc", include_in_schema=False)
+async def redoc_html():
+    return get_redoc_html(
+        openapi_url="/openapi.json",
+        title="SOA iBanking - Aggregated ReDoc",
+    )
+

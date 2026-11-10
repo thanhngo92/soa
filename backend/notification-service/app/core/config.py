@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     INTERNAL_SERVICE_KEY: str = "super_internal_service_secret_key_2026"
 
     # SMTP Configuration
+    # USE_REAL_SMTP: True -> gửi qua Gmail thật; False -> dùng Mailpit cục bộ
+    USE_REAL_SMTP: bool = True
     SMTP_HOST: str = "mailpit"
     SMTP_PORT: int = 1025
     SMTP_USER: str | None = None
@@ -26,13 +28,24 @@ class Settings(BaseSettings):
 
     @property
     def is_real_smtp(self) -> bool:
-        """Kiểm tra có cấu hình SMTP thật hay không (có user, password và host không phải mailpit)."""
+        """Kiểm tra có bật cờ USE_REAL_SMTP và có đủ thông tin đăng nhập SMTP thật hay không."""
         return bool(
-            self.SMTP_USER
+            self.USE_REAL_SMTP
+            and self.SMTP_USER
             and self.SMTP_PASSWORD
             and self.SMTP_HOST
             and self.SMTP_HOST.lower() != "mailpit"
         )
+
+    @field_validator("USE_REAL_SMTP", mode="before")
+    @classmethod
+    def validate_use_real_smtp(cls, v):
+        if v is None:
+            return True
+        val = str(v).strip().lower()
+        if val in ("false", "0", "no", "off"):
+            return False
+        return True
 
     @field_validator("SMTP_HOST", mode="before")
     @classmethod
