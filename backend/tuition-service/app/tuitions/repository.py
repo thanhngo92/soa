@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 import aiomysql
 from app.core.config import get_pool
 
@@ -56,56 +57,65 @@ async def mark_paid(
         await conn.begin()
         try:
             async with conn.cursor(aiomysql.DictCursor) as cur:
-                if tuition_id is not None:
-                    await cur.execute(
-                        "SELECT id, amount, status FROM tuitions WHERE id = %s FOR UPDATE",
-                        (tuition_id,),
-                    )
-                elif semester:
-                    await cur.execute(
-                        "SELECT id, amount, status FROM tuitions "
-                        "WHERE student_id = %s AND semester = %s FOR UPDATE",
-                        (mssv, semester),
-                    )
-                else:
-                    await cur.execute(
-                        "SELECT id, amount, status FROM tuitions "
-                        "WHERE student_id = %s "
-                        "ORDER BY CASE WHEN status = 'UNPAID' THEN 0 ELSE 1 END, id ASC LIMIT 1 FOR UPDATE",
-                        (mssv,),
-                    )
+                target_student_id = mssv
+                if not target_student_id and tuition_id is not None:
+                    await cur.execute("SELECT student_id FROM tuitions WHERE id = %s", (tuition_id,))
+                    t_row = await cur.fetchone()
+                    if t_row:
+                        target_student_id = t_row["student_id"]
 
-                target = await cur.fetchone()
-                if not target or target["status"] != "UNPAID":
+                if not target_student_id:
                     await conn.rollback()
                     return None
 
-                if expected_amount is not None and abs(float(target["amount"]) - float(expected_amount)) > 0.01:
+                # [Quy định: Không thanh toán từng phần - Thanh toán 1 lượt toàn bộ học phí nợ]
+                # Khóa bi quan FOR UPDATE toàn bộ các khoản nợ UNPAID của sinh viên
+                await cur.execute(
+                    "SELECT id, semester, amount, status FROM tuitions "
+                    "WHERE student_id = %s AND status = 'UNPAID' FOR UPDATE",
+                    (target_student_id,),
+                )
+                unpaid_rows = await cur.fetchall()
+                if not unpaid_rows:
+                    await conn.rollback()
+                    return None
+
+                total_amount = sum(float(r["amount"]) for r in unpaid_rows)
+                if expected_amount is not None and abs(total_amount - float(expected_amount)) > 0.01:
+                    await conn.rollback()
+                    return None
+
+                ids = [r["id"] for r in unpaid_rows]
+                ids_format = ",".join(["%s"] * len(ids))
+                await cur.execute(
+                    f"UPDATE tuitions SET status = 'PAID', paid_at = NOW() "
+                    f"WHERE id IN ({ids_format}) AND status = 'UNPAID'",
+                    ids,
+                )
+                if cur.rowcount != len(ids):
                     await conn.rollback()
                     return None
 
                 await cur.execute(
-                    "UPDATE tuitions SET status = 'PAID', paid_at = NOW() "
-                    "WHERE id = %s AND status = 'UNPAID'",
-                    (target["id"],),
+                    "SELECT student_id, student_name, major FROM students WHERE student_id = %s",
+                    (target_student_id,),
                 )
-                if cur.rowcount == 0:
-                    await conn.rollback()
-                    return None
-
-                await cur.execute(
-                    "SELECT t.id, s.student_id, s.student_name, s.major, t.semester, "
-                    "t.amount, t.status, t.paid_at "
-                    "FROM tuitions t "
-                    "INNER JOIN students s ON s.student_id = t.student_id "
-                    "WHERE t.id = %s",
-                    (target["id"],),
-                )
-                row = await cur.fetchone()
+                student = await cur.fetchone()
                 await conn.commit()
-                if row:
-                    row["amount"] = float(row["amount"])
-                return row
+
+                semesters_str = ", ".join(r["semester"] for r in unpaid_rows)
+                now_str = datetime.now(timezone.utc).isoformat()
+                return {
+                    "id": ids[0],
+                    "tuition_id": ids[0],
+                    "tuition_ids": ids,
+                    "student_id": target_student_id,
+                    "student_name": student["student_name"] if student else "",
+                    "semester": semesters_str,
+                    "amount": total_amount,
+                    "status": "PAID",
+                    "paid_at": now_str,
+                }
         except Exception:
             await conn.rollback()
             raise

@@ -1,7 +1,7 @@
 import api from '../lib/api'
 
-export const initiatePaymentApi = (student_id, tuition_id) =>
-  api.post('/payments/initiate', { student_id, ...(tuition_id ? { tuition_id } : {}) })
+export const initiatePaymentApi = (student_id) =>
+  api.post('/payments/initiate', { student_id })
 
 export const confirmPaymentApi = (payment_id, otp_code, idempotencyKey) => {
   const headers = idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}

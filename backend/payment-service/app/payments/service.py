@@ -31,15 +31,11 @@ async def initiate(request: Request, user: dict, student_id: str, tuition_id: in
     user_email = user["email"]
     cleaned_student_id = (student_id or "").strip().upper()
 
-    if tuition_id:
-        tuition = await clients.get_tuition_by_id(http, int(tuition_id))
-        if tuition.get("student_id") != cleaned_student_id:
-            raise AppError("INVALID_TUITION", "Tuition does not belong to this student", 400)
-    else:
-        tuition = await clients.get_tuition(http, cleaned_student_id)
+    # [Quy định: Không thanh toán từng phần - Luôn truy xuất và thanh toán 1 lượt toàn bộ công nợ học phí]
+    tuition = await clients.get_tuition(http, cleaned_student_id)
 
     if tuition["status"] == "PAID":
-        raise AppError("TUITION_ALREADY_PAID", "Tuition has already been paid", 409)
+        raise AppError("TUITION_ALREADY_PAID", "Toàn bộ học phí đã được thanh toán", 409)
 
     target_tuition_id = int(tuition["tuition_id"])
     amount = float(tuition["amount"])
@@ -72,7 +68,7 @@ async def initiate(request: Request, user: dict, student_id: str, tuition_id: in
         await transition_status(payment_id, "PENDING", "FAILED", "OTP_SEND_FAILED")
         raise
 
-    logger.info(f"Initiated payment #{payment_id} for tuition #{target_tuition_id} ({cleaned_student_id}, {semester}, {amount:,.0f} VND)")
+    logger.info(f"Initiated full payment #{payment_id} for tuition #{target_tuition_id} ({cleaned_student_id}, {semester}, {amount:,.0f} VND)")
 
     return {
         "payment_id": payment_id,

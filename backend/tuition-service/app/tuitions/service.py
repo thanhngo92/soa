@@ -42,14 +42,34 @@ async def get_tuition(mssv: str) -> dict:
         raise AppError("STUDENT_NOT_FOUND", f"Student {cleaned_mssv} not found", 404)
 
     tuitions_list = [_serialize_tuition(r) for r in rows]
-    # Primary record is the earliest UNPAID record (or the first record if all are PAID)
-    primary = tuitions_list[0]
-    total_unpaid = sum(t["amount"] for t in tuitions_list if t["status"] == "UNPAID")
-    unpaid_count = sum(1 for t in tuitions_list if t["status"] == "UNPAID")
+    unpaid_rows = [t for t in tuitions_list if t["status"] == "UNPAID"]
+    total_unpaid = sum(t["amount"] for t in unpaid_rows)
+    unpaid_count = len(unpaid_rows)
+
+    first_record = tuitions_list[0]
+    if unpaid_count > 0:
+        overall_status = "UNPAID"
+        payable_amount = total_unpaid
+        primary_id = unpaid_rows[0]["tuition_id"]
+        semesters_str = ", ".join(t["semester"] for t in unpaid_rows)
+        paid_at = None
+    else:
+        overall_status = "PAID"
+        payable_amount = sum(t["amount"] for t in tuitions_list)
+        primary_id = first_record["tuition_id"]
+        semesters_str = ", ".join(t["semester"] for t in tuitions_list)
+        paid_at = first_record.get("paid_at")
 
     return {
-        **primary,
-        "tuitions": tuitions_list,
+        "tuition_id":   primary_id,
+        "student_id":   first_record["student_id"],
+        "student_name": first_record["student_name"],
+        "major":        first_record["major"],
+        "semester":     semesters_str,
+        "amount":       payable_amount,
+        "status":       overall_status,
+        "paid_at":      paid_at,
+        "tuitions":     tuitions_list,
         "total_unpaid": total_unpaid,
         "unpaid_count": unpaid_count,
     }
