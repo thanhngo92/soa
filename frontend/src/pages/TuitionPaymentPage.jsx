@@ -49,6 +49,7 @@ export default function TuitionPaymentPage() {
 
   const [mssv, setMssv] = useState('')
   const [tuition, setTuition] = useState(null)
+  const [selectedTuitionId, setSelectedTuitionId] = useState(null)
   const [paymentId, setPaymentId] = useState(null)
   const [idempotencyKey, setIdempotencyKey] = useState('')
   const [receipt, setReceipt] = useState(null)
@@ -77,12 +78,23 @@ export default function TuitionPaymentPage() {
     try {
       const res = await getTuitionApi(trimmedMssv)
       if (seq === searchSeqRef.current) {
-        setTuition(res.data.data)
+        const data = res.data.data
+        setTuition(data)
+        const tuitionsList = data.tuitions || (data.tuition_id ? [data] : [])
+        const unpaidList = tuitionsList.filter((t) => t.status === 'UNPAID')
+        if (unpaidList.length > 0) {
+          setSelectedTuitionId(unpaidList[0].tuition_id)
+        } else if (tuitionsList.length > 0) {
+          setSelectedTuitionId(tuitionsList[0].tuition_id)
+        } else {
+          setSelectedTuitionId(data.tuition_id || null)
+        }
         setAgreedTerms(false)
       }
     } catch (err) {
       if (seq === searchSeqRef.current) {
         setTuition(null)
+        setSelectedTuitionId(null)
         setAgreedTerms(false)
         const code = err.response?.data?.error?.code
         setError(
@@ -117,17 +129,22 @@ export default function TuitionPaymentPage() {
     if (!trimmed) {
       searchSeqRef.current += 1
       setTuition(null)
+      setSelectedTuitionId(null)
       setAgreedTerms(false)
       setError('')
       setSearchLoading(false)
     } else if (tuition && tuition.student_id !== trimmed) {
       setTuition(null)
+      setSelectedTuitionId(null)
       setAgreedTerms(false)
     }
   }, [mssv])
 
+  const selectedTuition =
+    (tuition?.tuitions || []).find((t) => t.tuition_id === selectedTuitionId) || tuition
+
   const handleInitiate = async () => {
-    if (!tuition || tuition.status === 'PAID') return
+    if (!tuition || !selectedTuition || selectedTuition.status === 'PAID') return
     setError('')
     setPayError('')
     setOtpError('')
@@ -135,7 +152,7 @@ export default function TuitionPaymentPage() {
     setPayLoading(true)
     refreshProfile()
     try {
-      const res = await initiatePaymentApi(tuition.student_id)
+      const res = await initiatePaymentApi(tuition.student_id, selectedTuition.tuition_id)
       const newPaymentId = res.data.data.payment_id
       setPaymentId(newPaymentId)
       setIdempotencyKey(generateIdempotencyKey(newPaymentId))
@@ -159,9 +176,23 @@ export default function TuitionPaymentPage() {
       const res = await confirmPaymentApi(paymentId, otpCode, idempotencyKey)
       setShowOtp(false)
       setOtpLocked(false)
-      setReceipt(res.data.data)
-      setTuition(null)
+      setReceipt({
+        ...res.data.data,
+        semester: res.data.data.semester || selectedTuition?.semester,
+      })
       refreshProfile()
+      if (tuition?.student_id) {
+        getTuitionApi(tuition.student_id)
+          .then((r) => {
+            const data = r.data.data
+            setTuition(data)
+            const remainingUnpaid = (data?.tuitions || []).filter((t) => t.status === 'UNPAID')
+            if (remainingUnpaid.length > 0) {
+              setSelectedTuitionId(remainingUnpaid[0].tuition_id)
+            }
+          })
+          .catch(() => {})
+      }
     } catch (err) {
       const errCode = err.response?.data?.error?.code
       if (TERMINAL_OTP_CODES.has(errCode)) {
@@ -183,8 +214,12 @@ export default function TuitionPaymentPage() {
     }
   }
 
-  const isBalanceSufficient = profile && tuition ? profile.balance >= tuition.amount : true
-  const isPayable = tuition && tuition.status === 'UNPAID' && agreedTerms && (!ENABLE_FRONTEND_BALANCE_GUARD || isBalanceSufficient)
+  const isBalanceSufficient = profile && selectedTuition ? profile.balance >= selectedTuition.amount : true
+  const isPayable =
+    selectedTuition &&
+    selectedTuition.status === 'UNPAID' &&
+    agreedTerms &&
+    (!ENABLE_FRONTEND_BALANCE_GUARD || isBalanceSufficient)
 
   return (
     <div className="container mx-auto max-w-5xl py-6 px-4 sm:px-6 space-y-5">
@@ -267,32 +302,115 @@ export default function TuitionPaymentPage() {
               )}
 
               {tuition ? (
-                <div className={`pt-3 border-t space-y-3 transition-opacity duration-150 ${searchLoading ? 'opacity-60 pointer-events-none' : ''}`}>
-                  <div className="flex items-center justify-between gap-2 text-sm">
-                    <div>
-                      <span className="text-xs text-muted-foreground block">Mã số sinh viên (MSSV)</span>
-                      <span className="font-mono font-semibold text-foreground">{tuition.student_id}</span>
+                <div className={`pt-3 border-t space-y-4 transition-opacity duration-150 ${searchLoading ? 'opacity-60 pointer-events-none' : ''}`}>
+                  {/* Thông tin chung sinh viên */}
+                  <div className="bg-muted/30 p-3 rounded-lg border space-y-2">
+                    <div className="flex items-center justify-between gap-2 text-sm">
+                      <div>
+                        <span className="text-xs text-muted-foreground block">Mã số sinh viên (MSSV)</span>
+                        <span className="font-mono font-semibold text-foreground">{tuition.student_id}</span>
+                      </div>
+                      <Badge variant={tuition.unpaid_count === 0 ? 'success' : 'destructive'} className="text-xs">
+                        {tuition.unpaid_count === 0
+                          ? 'ĐÃ HOÀN TẤT HỌC PHÍ'
+                          : `CÒN NỢ ${tuition.unpaid_count ?? 1} HỌC KỲ`}
+                      </Badge>
                     </div>
-                    <Badge variant={tuition.status === 'PAID' ? 'success' : 'destructive'} className="text-xs">
-                      {tuition.status === 'PAID' ? 'ĐÃ ĐÓNG' : 'CHƯA ĐÓNG'}
-                    </Badge>
+
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-xs text-muted-foreground">Họ và tên sinh viên</span>
+                      <span className="font-bold text-base text-foreground">{tuition.student_name}</span>
+                    </div>
+
+                    {tuition.major && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-xs text-muted-foreground">Ngành học</span>
+                        <span className="text-foreground">{tuition.major}</span>
+                      </div>
+                    )}
+
+                    {(tuition.total_unpaid > 0 || (tuition.status === 'UNPAID' && tuition.amount)) && (
+                      <div className="flex items-baseline justify-between pt-1 border-t border-border/60">
+                        <span className="text-xs text-muted-foreground font-medium">Tổng tiền còn nợ</span>
+                        <span className="text-base font-bold text-red-600 dark:text-red-400 font-mono">
+                          {formatCurrency(tuition.total_unpaid ?? tuition.amount)}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-xs text-muted-foreground">Họ và tên sinh viên</span>
-                    <span className="font-bold text-base text-foreground">{tuition.student_name}</span>
-                  </div>
+                  {/* Danh sách các kỳ học phí */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground px-1">
+                      <span>DANH SÁCH CÁC KHOẢN HỌC PHÍ</span>
+                      <span>{tuition.tuitions?.length || 1} khoản</span>
+                    </div>
 
-                  <div className="flex items-baseline justify-between pt-1">
-                    <span className="text-xs text-muted-foreground">Số tiền học phí cần thanh toán</span>
-                    <span className="text-xl font-bold text-primary font-mono">{formatCurrency(tuition.amount)}</span>
-                  </div>
+                    <div className="space-y-2">
+                      {(tuition.tuitions || [tuition]).map((t) => {
+                        const isSelected = selectedTuitionId === t.tuition_id
+                        const isPaid = t.status === 'PAID'
 
-                  {tuition.status === 'PAID' && tuition.paid_at && (
-                    <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">
-                      Đã thanh toán: {formatDate(tuition.paid_at)}
-                    </p>
-                  )}
+                        return (
+                          <div
+                            key={t.tuition_id}
+                            onClick={() => {
+                              if (!isPaid && !payLoading) {
+                                setSelectedTuitionId(t.tuition_id)
+                              }
+                            }}
+                            className={`p-3 rounded-lg border text-sm transition-all select-none ${
+                              isPaid
+                                ? 'bg-muted/20 border-border/60 opacity-75 cursor-default'
+                                : isSelected
+                                ? 'bg-blue-50/70 dark:bg-blue-950/40 border-blue-500 ring-1 ring-blue-500 cursor-pointer shadow-xs'
+                                : 'bg-card border-border hover:border-blue-300 hover:bg-muted/30 cursor-pointer'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2.5">
+                                <input
+                                  type="radio"
+                                  name="selected_tuition"
+                                  checked={isSelected}
+                                  disabled={isPaid}
+                                  onChange={() => setSelectedTuitionId(t.tuition_id)}
+                                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 cursor-pointer disabled:cursor-not-allowed"
+                                />
+                                <div>
+                                  <span className="font-semibold text-foreground block">
+                                    {t.semester}
+                                  </span>
+                                  {isPaid && t.paid_at && (
+                                    <span className="text-xs text-emerald-700 dark:text-emerald-400 block">
+                                      Đã thanh toán: {formatDate(t.paid_at)}
+                                    </span>
+                                  )}
+                                  {!isPaid && isSelected && (
+                                    <span className="text-xs text-blue-700 dark:text-blue-300 font-medium block">
+                                      Đang chọn thanh toán kỳ này
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="text-right">
+                                <span className="font-mono font-bold text-base text-primary block">
+                                  {formatCurrency(t.amount)}
+                                </span>
+                                <Badge
+                                  variant={isPaid ? 'success' : 'destructive'}
+                                  className="text-[10px] px-1.5 py-0 mt-0.5 inline-block"
+                                >
+                                  {isPaid ? 'ĐÃ ĐÓNG' : 'CHƯA ĐÓNG'}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
                 </div>
               ) : !searchLoading && !error ? (
                 <div className="py-4 text-center text-xs text-muted-foreground">
@@ -320,10 +438,18 @@ export default function TuitionPaymentPage() {
                     {profile ? formatCurrency(profile.balance) : '---'}
                   </span>
                 </div>
-                <div className="flex justify-between">
+                {selectedTuition?.semester && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Học kỳ thanh toán</span>
+                    <span className="font-semibold text-foreground text-xs">
+                      {selectedTuition.semester}
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between border-t border-border/50 pt-1.5">
                   <span className="text-muted-foreground">Số tiền cần thanh toán</span>
                   <span className="font-mono font-bold text-foreground text-sm">
-                    {tuition ? formatCurrency(tuition.amount) : '---'}
+                    {selectedTuition ? formatCurrency(selectedTuition.amount) : '---'}
                   </span>
                 </div>
               </div>
@@ -334,21 +460,27 @@ export default function TuitionPaymentPage() {
                   id="terms"
                   checked={agreedTerms}
                   onChange={(e) => setAgreedTerms(e.target.checked)}
-                  disabled={!tuition || tuition.status === 'PAID' || payLoading}
+                  disabled={!selectedTuition || selectedTuition.status === 'PAID' || payLoading}
                   className="mt-0.5 h-3.5 w-3.5 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer shrink-0"
                 />
                 <span>Tôi xác nhận thông tin sinh viên và đồng ý với các thỏa thuận và điều khoản của hệ thống.</span>
               </label>
 
-              {tuition && tuition.status === 'PAID' && (
+              {tuition && tuition.unpaid_count === 0 && (
                 <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 text-xs border border-emerald-200 dark:border-emerald-900/50">
-                  Khoản học phí này đã được thanh toán.
+                  Sinh viên đã hoàn thành toàn bộ các khoản học phí.
                 </div>
               )}
 
-              {tuition && tuition.status === 'UNPAID' && ENABLE_FRONTEND_BALANCE_GUARD && !isBalanceSufficient && (
+              {selectedTuition && selectedTuition.status === 'PAID' && tuition?.unpaid_count > 0 && (
+                <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 text-xs border border-emerald-200 dark:border-emerald-900/50">
+                  Khoản học kỳ này đã được thanh toán. Vui lòng chọn học kỳ chưa đóng để thanh toán.
+                </div>
+              )}
+
+              {selectedTuition && selectedTuition.status === 'UNPAID' && ENABLE_FRONTEND_BALANCE_GUARD && !isBalanceSufficient && (
                 <div className="p-2.5 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-200 text-xs border border-red-200 dark:border-red-900/50">
-                  Số dư khả dụng không đủ để thanh toán.
+                  Số dư khả dụng không đủ để thanh toán khoản này.
                 </div>
               )}
 

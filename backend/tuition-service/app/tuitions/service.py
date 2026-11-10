@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 import logging
 import re
-from app.tuitions.repository import find_by_id, find_by_mssv, mark_paid
+from app.tuitions.repository import find_by_id, find_by_mssv, find_all_by_mssv, mark_paid
 from app.core.common import AppError
 
 logger = logging.getLogger("tuition_service")
@@ -36,11 +36,23 @@ async def get_tuition(mssv: str) -> dict:
     if not _MSSV_PATTERN.match(cleaned_mssv):
         raise AppError("INVALID_MSSV_FORMAT", "Mã số sinh viên không hợp lệ (cần từ 6 đến 10 ký tự chữ và số)", 400)
 
-    r = await find_by_mssv(cleaned_mssv)
-    if not r:
+    rows = await find_all_by_mssv(cleaned_mssv)
+    if not rows:
         logger.warning(f"Tuition query failed: Student '{cleaned_mssv}' not found")
         raise AppError("STUDENT_NOT_FOUND", f"Student {cleaned_mssv} not found", 404)
-    return _serialize_tuition(r)
+
+    tuitions_list = [_serialize_tuition(r) for r in rows]
+    # Primary record is the earliest UNPAID record (or the first record if all are PAID)
+    primary = tuitions_list[0]
+    total_unpaid = sum(t["amount"] for t in tuitions_list if t["status"] == "UNPAID")
+    unpaid_count = sum(1 for t in tuitions_list if t["status"] == "UNPAID")
+
+    return {
+        **primary,
+        "tuitions": tuitions_list,
+        "total_unpaid": total_unpaid,
+        "unpaid_count": unpaid_count,
+    }
 
 
 async def get_tuition_by_id(tuition_id: int) -> dict:

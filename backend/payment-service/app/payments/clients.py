@@ -150,6 +150,7 @@ async def send_otp(
     student_id: str | None = None,
     student_name: str | None = None,
     amount: float | None = None,
+    semester: str | None = None,
 ) -> None:
     payload: dict = {"payment_id": payment_id, "email": email}
     if student_id:
@@ -158,6 +159,8 @@ async def send_otp(
         payload["student_name"] = student_name
     if amount is not None:
         payload["amount"] = amount
+    if semester:
+        payload["semester"] = semester
 
     try:
         r = await http.post(

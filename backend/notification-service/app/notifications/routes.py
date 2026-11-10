@@ -14,6 +14,7 @@ async def generate_otp_endpoint(body: GenerateOtpRequest, _=Depends(verify_inter
         student_id=body.student_id,
         student_name=body.student_name,
         amount=body.amount,
+        semester=body.semester,
     )
     return success({"status": "SENT"}, message="OTP sent")
 
@@ -26,5 +27,13 @@ async def verify_otp_endpoint(body: VerifyOtpRequest, _=Depends(verify_internal_
 
 @router.post("/email/success")
 async def send_success_email_endpoint(body: SendSuccessEmailRequest, _=Depends(verify_internal_token)):
-    await send_success_email(body.email, body.payment_id, body.student_name, body.student_id, body.amount, body.paid_at)
+    await send_success_email(
+        email=body.email,
+        payment_id=body.payment_id,
+        student_name=body.student_name,
+        student_id=body.student_id,
+        amount=body.amount,
+        paid_at=body.paid_at,
+        semester=body.semester,
+    )
     return success({"status": "SENT"}, message="Email sent")

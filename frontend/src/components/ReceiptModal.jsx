@@ -50,6 +50,13 @@ export default function ReceiptModal({ open = true, data, onClose }) {
               <span className="font-mono font-bold text-foreground">{data.student_id}</span>
             </div>
 
+            {data.semester && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Học kỳ</span>
+                <span className="font-semibold text-foreground">{data.semester}</span>
+              </div>
+            )}
+
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Thời gian</span>
               <span>{formatDate(data.paid_at)}</span>

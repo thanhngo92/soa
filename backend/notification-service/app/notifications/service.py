@@ -70,6 +70,7 @@ async def generate_otp(
     student_id: str | None = None,
     student_name: str | None = None,
     amount: float | None = None,
+    semester: str | None = None,
 ) -> None:
     otp_code = None
     for _ in range(20):
@@ -89,6 +90,8 @@ async def generate_otp(
         tx_info_lines.append(f"Sinh viên     : {student_name} (MSSV: {student_id})")
     elif student_id:
         tx_info_lines.append(f"Mã sinh viên  : {student_id}")
+    if semester:
+        tx_info_lines.append(f"Học kỳ        : {semester}")
     if amount is not None:
         tx_info_lines.append(f"Số tiền       : {amount:,.0f} VND")
     tx_info_str = "\n".join(tx_info_lines)
@@ -143,15 +146,18 @@ async def send_success_email(
     student_id: str,
     amount: float,
     paid_at: str,
+    semester: str | None = None,
 ) -> None:
     logger.info(f"Sending payment receipt email to '{email}' for payment_id={payment_id}")
     formatted_time = _format_vn_time(paid_at)
+    semester_line = f"Học kỳ        : {semester}\n" if semester else ""
     body = (
         f"Kính gửi Quý khách,\n\n"
         f"Giao dịch thanh toán học phí của bạn đã THÀNH CÔNG.\n\n"
         f"--- THÔNG TIN BIÊN NHẬN ---\n"
         f"Mã giao dịch  : #{payment_id}\n"
         f"Sinh viên     : {student_name} (MSSV: {student_id})\n"
+        f"{semester_line}"
         f"Số tiền đã thu: {amount:,.0f} VND\n"
         f"Thời gian     : {formatted_time}\n"
         f"Trạng thái    : THÀNH CÔNG (ĐÃ GẠCH NỢ)\n"

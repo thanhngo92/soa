@@ -2,7 +2,7 @@ import aiomysql
 from app.core.config import get_pool
 
 
-async def find_by_mssv(mssv: str) -> dict | None:
+async def find_all_by_mssv(mssv: str) -> list[dict]:
     pool = get_pool()
     async with pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cur:
@@ -12,14 +12,18 @@ async def find_by_mssv(mssv: str) -> dict | None:
                 "FROM students s "
                 "INNER JOIN tuitions t ON s.student_id = t.student_id "
                 "WHERE s.student_id = %s "
-                "ORDER BY CASE WHEN t.status = 'UNPAID' THEN 0 ELSE 1 END, t.id ASC LIMIT 1",
+                "ORDER BY CASE WHEN t.status = 'UNPAID' THEN 0 ELSE 1 END, t.id ASC",
                 (mssv,),
             )
-            row = await cur.fetchone()
-            if not row:
-                return None
-            row["amount"] = float(row["amount"])
-            return row
+            rows = await cur.fetchall()
+            for row in rows:
+                row["amount"] = float(row["amount"])
+            return rows
+
+
+async def find_by_mssv(mssv: str) -> dict | None:
+    rows = await find_all_by_mssv(mssv)
+    return rows[0] if rows else None
 
 
 async def find_by_id(tuition_id: int) -> dict | None:

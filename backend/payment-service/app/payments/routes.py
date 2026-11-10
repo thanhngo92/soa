@@ -8,7 +8,7 @@ router = APIRouter()
 
 @router.post("/initiate")
 async def initiate_endpoint(body: InitiatePaymentRequest, request: Request, user: dict = Depends(get_current_user)):
-    return success(await initiate(request, user, body.student_id))
+    return success(await initiate(request, user, body.student_id, body.tuition_id))
 
 
 @router.post("/confirm")

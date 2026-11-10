@@ -25,19 +25,26 @@ def _format_utc_iso(dt_val) -> str | None:
     return str(dt_val)
 
 
-async def initiate(request: Request, user: dict, student_id: str) -> dict:
+async def initiate(request: Request, user: dict, student_id: str, tuition_id: int | None = None) -> dict:
     http = request.app.state.http
     user_id = int(user["sub"])
     user_email = user["email"]
     cleaned_student_id = (student_id or "").strip().upper()
 
-    tuition = await clients.get_tuition(http, cleaned_student_id)
+    if tuition_id:
+        tuition = await clients.get_tuition_by_id(http, int(tuition_id))
+        if tuition.get("student_id") != cleaned_student_id:
+            raise AppError("INVALID_TUITION", "Tuition does not belong to this student", 400)
+    else:
+        tuition = await clients.get_tuition(http, cleaned_student_id)
+
     if tuition["status"] == "PAID":
         raise AppError("TUITION_ALREADY_PAID", "Tuition has already been paid", 409)
 
-    tuition_id = int(tuition["tuition_id"])
+    target_tuition_id = int(tuition["tuition_id"])
     amount = float(tuition["amount"])
     student_name = tuition["student_name"]
+    semester = tuition.get("semester")
 
     token = request.headers.get("authorization", "").replace("Bearer ", "")
     balance = await clients.get_account_balance(http, token)
@@ -46,7 +53,7 @@ async def initiate(request: Request, user: dict, student_id: str) -> dict:
 
     payment_id = await create_payment({
         "account_id": user_id,
-        "tuition_id": tuition_id,
+        "tuition_id": target_tuition_id,
         "amount": amount,
         "status": "PENDING",
     })
@@ -59,17 +66,20 @@ async def initiate(request: Request, user: dict, student_id: str) -> dict:
             student_id=cleaned_student_id,
             student_name=student_name,
             amount=amount,
+            semester=semester,
         )
     except Exception:
         await transition_status(payment_id, "PENDING", "FAILED", "OTP_SEND_FAILED")
         raise
 
-    logger.info(f"Initiated payment #{payment_id} for tuition #{tuition_id} ({cleaned_student_id}, {amount:,.0f} VND)")
+    logger.info(f"Initiated payment #{payment_id} for tuition #{target_tuition_id} ({cleaned_student_id}, {semester}, {amount:,.0f} VND)")
 
     return {
         "payment_id": payment_id,
+        "tuition_id": target_tuition_id,
         "amount": amount,
         "student_name": student_name,
+        "semester": semester,
     }
 
 
@@ -145,6 +155,7 @@ async def confirm(request: Request, user: dict, payment_id: str, otp_code: str) 
         "student_id": student_id,
         "amount": amount,
         "paid_at": paid_at,
+        "semester": semester,
     })
 
     return {

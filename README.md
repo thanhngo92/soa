@@ -1,6 +1,6 @@
 # iBanking Tuition Payment System (SOA Architecture)
 
-Hệ thống thanh toán học phí đại học tích hợp ngân hàng điện tử iBanking theo kiến trúc hướng dịch vụ (Service-Oriented Architecture - SOA), áp dụng kiểm soát đồng thời mức cơ sở dữ liệu (ACID Transaction & InnoDB Row-level Locking), điều phối bù trừ giao dịch phân tán (Distributed Saga Compensation) và xác thực OTP 2 lớp qua email.
+Hệ thống thanh toán học phí đại học tích hợp ngân hàng điện tử iBanking theo kiến trúc hướng dịch vụ (Service-Oriented Architecture - SOA), áp dụng kiểm soát đồng thời mức cơ sở dữ liệu (ACID Transaction & InnoDB Row-level Locking), điều phối bù trừ giao dịch phân tán (Distributed Saga Compensation) và xác thực mã OTP qua email.
 
 ## 1. Cấu Trúc Các Phân Hệ Dịch Vụ
 

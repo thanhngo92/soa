@@ -117,12 +117,19 @@ def _reset_tuition_and_test_data(student_ids: list[str] | tuple[str, ...]):
         f"UPDATE tuition_db.tuitions SET status = 'UNPAID', paid_at = NULL "
         f"WHERE student_id IN ({sids_sql});"
     )
-    subprocess.run(
+    res = subprocess.run(
         ["docker", "compose", "exec", "-T", "mysql", "mysql", "-P8552", "-uroot", "-prootpassword", "-e", sql],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         check=False,
     )
+    if res.returncode != 0:
+        subprocess.run(
+            ["docker", "exec", "-i", "soa-mysql", "mysql", "-uroot", "-prootpassword", "-e", sql],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
 
 
 async def _ensure_balance(client: httpx.AsyncClient, token: str, target_balance: float):

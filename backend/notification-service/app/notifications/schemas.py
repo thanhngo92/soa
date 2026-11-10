@@ -7,6 +7,7 @@ class GenerateOtpRequest(BaseModel):
     student_id: str | None = None
     student_name: str | None = None
     amount: float | None = None
+    semester: str | None = None
 
 
 class VerifyOtpRequest(BaseModel):
@@ -21,3 +22,4 @@ class SendSuccessEmailRequest(BaseModel):
     student_id: str
     amount: float
     paid_at: str
+    semester: str | None = None
